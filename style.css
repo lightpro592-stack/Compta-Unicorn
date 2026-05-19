@@ -1,0 +1,567 @@
+/* --- Bases & Couleurs Unicorn --- */
+:root {
+    --bg-dark: #1a0028;
+    --panel-dark: #2d0045;
+    --panel-mid: #3d005a;
+    --text-light: #ffe6fa;
+    --unicorn-pink: #ff69b4;
+    --unicorn-purple: #a259e6;
+    --unicorn-gold: #ffd700;
+    --unicorn-cyan: #7fffd4;
+    --rp-red: #e74c3c;
+    --rp-green: #2ecc71;
+    --grade-patron: #ff69b4;
+    --grade-copatron: #a259e6;
+    --grade-drh: #ffd700;
+    --grade-gerant: #e67e22;
+    --grade-stagiaire: #c0392b;
+}
+
+/* ========================= BODY & FOND ========================= */
+body {
+    font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(162, 89, 230, 0.25) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, rgba(255, 105, 180, 0.18) 0%, transparent 60%),
+        linear-gradient(160deg, #1a0028 0%, #0d001a 100%);
+    background-attachment: fixed;
+    color: var(--text-light);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* Grain léger */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* ========================= NAVBAR ========================= */
+.navbar {
+    position: relative;
+    z-index: 10;
+    background: rgba(45, 0, 69, 0.92);
+    backdrop-filter: blur(12px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 40px;
+    border-bottom: 2px solid var(--unicorn-pink);
+    box-shadow: 0 4px 30px rgba(255, 105, 180, 0.25);
+}
+
+.nav-logo {
+    font-family: 'Pacifico', cursive;
+    color: var(--unicorn-pink);
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(255, 105, 180, 0.6), 2px 2px 8px var(--unicorn-gold);
+}
+
+.nav-links button {
+    background: none;
+    border: 1px solid rgba(255, 105, 180, 0.4);
+    color: var(--text-light);
+    padding: 8px 18px;
+    margin-left: 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.25s;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.nav-links button:hover,
+.nav-links button.active {
+    background: linear-gradient(135deg, var(--unicorn-pink), var(--unicorn-purple));
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 0 16px rgba(255, 105, 180, 0.5);
+    transform: translateY(-1px);
+}
+
+#btn-nav-login {
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+
+/* ========================= TITRES ========================= */
+h1 {
+    font-family: 'Pacifico', cursive;
+    color: var(--unicorn-pink);
+    margin: 0;
+    font-size: 2rem;
+    text-shadow: 0 0 20px rgba(255, 105, 180, 0.4), 1px 1px 6px var(--unicorn-gold);
+}
+
+h3 {
+    color: var(--unicorn-pink);
+    margin: 0 0 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ========================= LAYOUT ========================= */
+.page { animation: fadeIn 0.35s ease; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.header-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.header-buttons { display: flex; gap: 10px; }
+
+.management-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 15px;
+    align-items: start;
+}
+
+.side-panel { display: flex; flex-direction: column; gap: 12px; }
+
+/* ========================= TABLEAUX ========================= */
+.table-container {
+    background: rgba(45, 0, 69, 0.7);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    border: 1px solid rgba(162, 89, 230, 0.3);
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+
+th {
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--unicorn-gold);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 9px 8px;
+    border-bottom: 1px solid rgba(162, 89, 230, 0.4);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+td {
+    padding: 7px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    background: transparent;
+}
+
+td:last-child { border-bottom: none; }
+
+table input[type="text"],
+table input[type="number"],
+table select {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    border: 1px solid rgba(162, 89, 230, 0.3);
+    padding: 4px 6px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+table input:focus, table select:focus {
+    outline: none;
+    border-color: var(--unicorn-pink);
+}
+
+.row-active td { color: var(--text-light); }
+.row-inactive td { color: #554466 !important; font-style: italic; }
+.row-inactive input, .row-inactive select {
+    opacity: 0.25;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
+.quota-cell {
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-align: center;
+    min-width: 90px;
+}
+
+.nb-employes-card {
+    background: linear-gradient(135deg, var(--unicorn-purple), var(--unicorn-pink));
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+}
+
+/* ========================= CARDS DASHBOARD ========================= */
+.finance-grid { display: flex; flex-direction: column; gap: 15px; }
+
+.finance-top-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.finance-bottom-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.card-alt {
+    background: rgba(45, 0, 69, 0.7);
+    backdrop-filter: blur(8px);
+    padding: 18px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(162, 89, 230, 0.3);
+    text-align: center;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.card-alt span {
+    font-weight: 700;
+    font-size: 1.7rem;
+    display: block;
+    margin: 8px 0 4px;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.card-alt.primary {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.3));
+    border-color: rgba(46, 204, 113, 0.5);
+    color: #2ecc71;
+}
+
+.card-alt.warning {
+    background: linear-gradient(135deg, rgba(230, 126, 34, 0.2), rgba(211, 84, 0, 0.3));
+    border-color: rgba(230, 126, 34, 0.5);
+    color: #e67e22;
+}
+
+.card-alt.danger {
+    background: linear-gradient(135deg, rgba(192, 57, 43, 0.2), rgba(146, 43, 33, 0.3));
+    border-color: rgba(192, 57, 43, 0.5);
+    color: #e74c3c;
+}
+
+/* ========================= FORM BOX ========================= */
+.form-box {
+    background: rgba(45, 0, 69, 0.7);
+    backdrop-filter: blur(8px);
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(162, 89, 230, 0.3);
+}
+
+/* ========================= CATALOGUE PRODUITS ========================= */
+.catalogue-box { }
+
+.catalogue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.catalogue-list::-webkit-scrollbar { width: 4px; }
+.catalogue-list::-webkit-scrollbar-track { background: transparent; }
+.catalogue-list::-webkit-scrollbar-thumb { background: var(--unicorn-purple); border-radius: 4px; }
+
+.catalogue-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(162, 89, 230, 0.2);
+    font-size: 0.88rem;
+}
+
+.catalogue-nom { color: var(--text-light); }
+
+.catalogue-prix {
+    color: var(--unicorn-gold);
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+}
+
+/* ========================= FACTURATION ========================= */
+.billing-grid {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 15px;
+    align-items: start;
+}
+
+.billing-header-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 0.7fr 1.5fr 0.7fr;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    background: linear-gradient(90deg, var(--unicorn-purple), var(--unicorn-pink));
+    color: white;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(162, 89, 230, 0.3);
+    color: white;
+    padding: 7px 8px;
+    border-radius: 5px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--unicorn-pink);
+}
+
+.billing-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-validate-facture {
+    background: linear-gradient(135deg, var(--rp-green), #27ae60);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.btn-validate-facture:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.5);
+}
+
+.facture-total-card {
+    background: linear-gradient(135deg, var(--unicorn-gold), #e6b800);
+    color: #1a0028;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    font-family: 'Rajdhani', sans-serif;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+/* ========================= BOUTONS ========================= */
+.btn-recruit {
+    background: linear-gradient(135deg, var(--rp-green), #27ae60);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(46, 204, 113, 0.3);
+}
+
+.btn-recruit:hover { transform: translateY(-2px); }
+
+.btn-reset {
+    background: linear-gradient(135deg, var(--rp-red), #c0392b);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.btn-reset:hover { transform: translateY(-2px); }
+
+.btn-add-pnj {
+    background: linear-gradient(135deg, var(--unicorn-purple), var(--unicorn-pink));
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+}
+
+.btn-add-pnj:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(162, 89, 230, 0.5);
+}
+
+.btn-patron-only { }
+
+.action-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+
+/* ========================= MODE EMPLOYÉ ========================= */
+.is-employee .btn-recruit,
+.is-employee .btn-reset,
+.is-employee .btn-add-pnj,
+.is-employee .header-buttons,
+.is-employee .add-pnj-box,
+.is-employee .btn-patron-only {
+    display: none !important;
+}
+
+.is-employee #page-employes input,
+.is-employee #page-employes select,
+.is-employee #page-dashboard input {
+    pointer-events: none;
+    opacity: 0.6;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Le bouton "+ Vente" reste accessible en mode employé */
+.is-employee .btn-vente-emp {
+    display: inline-block !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+/* ========================= MODAL ========================= */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: linear-gradient(160deg, #2d0045, #1a0028);
+    margin: 8% auto;
+    padding: 28px;
+    border: 1px solid rgba(255, 105, 180, 0.4);
+    width: 400px;
+    border-radius: 14px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(162, 89, 230, 0.3);
+    animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-content h2 {
+    font-family: 'Pacifico', cursive;
+    color: var(--unicorn-pink);
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    text-shadow: 0 0 15px rgba(255, 105, 180, 0.4);
+}
+
+.modal-content label {
+    color: #ccc;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.modal-content input,
+.modal-content select {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(162, 89, 230, 0.4);
+    color: white;
+    border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.modal-content input:focus,
+.modal-content select:focus {
+    outline: none;
+    border-color: var(--unicorn-pink);
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    color: #888;
+    font-size: 26px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close:hover { color: var(--unicorn-pink); }
+
+/* ========================= SCROLLBAR GLOBALE ========================= */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--unicorn-purple); border-radius: 6px; }

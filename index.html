@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦄 Unicorn — ERP GTA V</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="is-employee">
+
+<nav class="navbar">
+    <div class="nav-logo">🦄 Unicorn ERP</div>
+    <div class="nav-links">
+        <button onclick="showPage('employes')" id="btn-nav-employes" class="active">Employé(e)s</button>
+        <button onclick="showPage('dashboard')" id="btn-nav-dashboard">Dashboard</button>
+        <button onclick="showPage('facturation')" id="btn-nav-facturation">Facturation</button>
+        <button id="btn-nav-employe-compte" onclick="openEmployeeLoginModal()" style="border-color:rgba(127,255,212,0.5);color:rgba(127,255,212,0.8);">👤 Espace Employé</button>
+        <button id="btn-nav-login" onclick="loginPatron()">🔒 Connexion Patron</button>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- ===== PAGE EMPLOYÉS ===== -->
+    <section id="page-employes" class="page">
+        <div class="header-action">
+            <h1>🦄 Tableau de Bord</h1>
+            <div class="header-buttons">
+                <button class="btn-recruit" onclick="openRecruitModal()">➕ Recrutement</button>
+                <button class="btn-reset" onclick="resetGlobalData()">🔄 Reset Semaine</button>
+            </div>
+        </div>
+
+        <div class="management-grid">
+            <div class="table-container main-table">
+                <table id="employeeTable">
+                    <thead>
+                        <tr>
+                            <th>Grade</th>
+                            <th>Employé(e)</th>
+                            <th>% Paye</th>
+                            <th>Salaire</th>
+                            <th>Produits Vendus</th>
+                            <th>Quota</th>
+                            <th>Primes</th>
+                            <th>Apport Total</th>
+                            <th>Compte</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeTableBody"></tbody>
+                </table>
+                <div class="nb-employes-card">NB Employés : <span id="nbEmployes">0</span></div>
+            </div>
+
+            <div class="side-panel">
+                <div class="table-container mini-table grade-pay-table">
+                    <h3>% de Paye par Grade</h3>
+                    <table>
+                        <tbody>
+                            <tr><td style="color:var(--grade-patron)">Patron</td><td>70%</td></tr>
+                            <tr><td style="color:var(--grade-copatron)">Co-Patron</td><td>70%</td></tr>
+                            <tr><td style="color:var(--grade-drh)">DRH</td><td>60%</td></tr>
+                            <tr><td style="color:var(--grade-gerant)">Gérant</td><td>55%</td></tr>
+                            <tr><td>Danceur/se</td><td>45%</td></tr>
+                            <tr><td>Sécurité</td><td>40%</td></tr>
+                            <tr><td style="color:var(--grade-stagiaire)">Stagiaire</td><td>35%</td></tr>
+                            <tr><td>Aucun Grade</td><td>0%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-box add-pnj-box">
+                    <h3>💰 Ajout Manuel</h3>
+                    <select id="pnjChauffeurSelect" style="width:100%;padding:8px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.3);border-radius:4px;margin-bottom:8px;">
+                        <option value="">Sélectionner un chauffeur</option>
+                    </select>
+                    <div class="action-row">
+                        <input type="number" id="pnjCount" value="0" style="width:80px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.3);border-radius:4px;padding:6px;">
+                        <button class="btn-add-pnj" onclick="addPNJToChauffeur()" style="flex:1;">➕</button>
+                        <button class="btn-reset" onclick="removePNJFromChauffeur()" style="flex:1;padding:8px;font-size:0.85rem;">➖</button>
+                    </div>
+                </div>
+
+                <div class="form-box catalogue-box">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <h3 style="margin:0;">🛍️ Catalogue</h3>
+                        <button class="btn-patron-only btn-add-pnj" onclick="openProductModal()" style="padding:5px 10px;font-size:0.8rem;">+ Gérer</button>
+                    </div>
+                    <div id="catalogueList" class="catalogue-list"></div>
+                </div>
+
+                <div class="form-box catalogue-box">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <h3 style="margin:0;">🤝 Partenariats</h3>
+                        <button class="btn-patron-only btn-add-pnj" onclick="openPartenariatModal()" style="padding:5px 10px;font-size:0.8rem;">+ Gérer</button>
+                    </div>
+                    <div id="employsPartenariatList" class="catalogue-list"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PAGE DASHBOARD ===== -->
+    <section id="page-dashboard" class="page" style="display:none;">
+        <h1>📊 Dashboard Financier</h1>
+        <div class="finance-grid">
+            <div class="finance-top-cards">
+                <div class="card-alt primary">
+                    Chiffre d'Affaire<br>
+                    <span id="totalCA">0.00</span>$
+                    <div style="margin-top:8px;display:flex;gap:5px;justify-content:center;">
+                        <button onclick="updateCAManuellement()" class="btn-patron-only" style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);cursor:pointer;font-size:0.7rem;padding:3px 8px;border-radius:3px;color:white;">Modifier</button>
+                        <button onclick="resetAjustementCA()" class="btn-patron-only" style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.3);cursor:pointer;font-size:0.7rem;padding:3px 8px;border-radius:3px;color:white;">Reset</button>
+                    </div>
+                </div>
+                <div class="card-alt warning">Masse Salariale<br><span id="totalMasseSalariale">0.00</span>$</div>
+                <div class="card-alt warning">Total Primes<br><span id="totalPrimes">0.00</span>$</div>
+                <div class="card-alt primary">Bénéfice Net<br><span id="beneficeNet">0.00</span>$</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PAGE FACTURATION ===== -->
+    <section id="page-facturation" class="page" style="display:none;">
+        <h1>🧾 Facturation Client</h1>
+        <div class="billing-grid">
+
+            <div class="billing-main-col">
+                <div class="form-box" style="margin-bottom:12px;">
+                    <div class="billing-top-row">
+                        <div class="form-group">
+                            <label>👤 Chauffeur</label>
+                            <select id="billEmployeSelect">
+                                <option value="">Sélectionner...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🤝 Partenariat</label>
+                            <select id="billPartenariatSelect" onchange="calculateFactureTotal()">
+                                <option value="">— Aucun partenariat —</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-box" style="margin-bottom:12px;">
+                    <div class="billing-add-row">
+                        <div class="form-group" style="flex:2;">
+                            <label>🛍️ Produit</label>
+                            <select id="billProduitSelect" onchange="onProduitChange()">
+                                <option value="">— Choisir un produit —</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Prix ($)</label>
+                            <input type="number" id="billMontant" value="0" step="0.01" oninput="calculateFactureTotal()">
+                        </div>
+                        <div class="form-group" style="flex:0.7;">
+                            <label>Qté</label>
+                            <input type="number" id="billQuantite" value="1" min="1" step="1" oninput="calculateFactureTotal()">
+                        </div>
+                        <div class="form-group" style="flex:0.6;display:flex;align-items:flex-end;">
+                            <button class="btn-add-panier" onclick="addItemToFacture()">+ Ajouter</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-box">
+                    <h3 style="margin-bottom:12px;">🛒 Panier de la facture</h3>
+                    <div class="table-container" style="margin-bottom:12px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th style="text-align:center;">Prix unit.</th>
+                                    <th style="text-align:center;">Qté</th>
+                                    <th style="text-align:right;">Sous-total</th>
+                                    <th style="text-align:center;width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="factureItemsTable">
+                                <tr><td colspan="5" class="panier-empty">Aucun produit ajouté.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="billReductionLabel" style="display:none;background:rgba(127,255,212,0.1);border:1px solid var(--unicorn-cyan);border-radius:6px;padding:8px 12px;font-size:0.85rem;color:var(--unicorn-cyan);margin-bottom:12px;"></div>
+
+                    <div class="billing-action-row">
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn-validate-facture" onclick="processFacture()">✅ VALIDER LA FACTURE</button>
+                            <button onclick="clearFacture()" style="background:rgba(231,76,60,0.2);border:1px solid var(--rp-red);color:var(--rp-red);padding:12px 18px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.9rem;transition:0.2s;" onmouseover="this.style.background='rgba(231,76,60,0.4)'" onmouseout="this.style.background='rgba(231,76,60,0.2)'">🗑️ Vider</button>
+                        </div>
+                        <div class="facture-total-card">Total : <span id="billTotalAffiche">0.00</span>$</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div class="table-container mini-table">
+                    <h3>🛍️ Catalogue</h3>
+                    <div id="facturationCatalogueList" class="catalogue-list" style="padding:10px;"></div>
+                </div>
+                <div class="table-container mini-table" style="margin-top:10px;">
+                    <h3>🤝 Partenariats</h3>
+                    <div id="facturationPartenariatList" class="catalogue-list" style="padding:10px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<!-- ===== MODAL CONNEXION EMPLOYÉ ===== -->
+<div id="employeeLoginModal" class="modal">
+    <div class="modal-content" style="width:360px;">
+        <span class="close" onclick="closeEmployeeLoginModal()">&times;</span>
+        <h2>👤 Espace Employé</h2>
+        <p style="color:#aaa;font-size:0.85rem;margin:-10px 0 18px;">Connecte-toi pour consulter ta fiche personnelle.</p>
+        <div style="margin-bottom:14px;">
+            <label>Nom complet</label>
+            <input type="text" id="empLoginName" placeholder="Ton prénom + nom" style="width:100%;padding:9px;margin-top:5px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:6px;">
+            <label>Mot de passe</label>
+            <input type="password" id="empLoginPassword" placeholder="••••••" style="width:100%;padding:9px;margin-top:5px;box-sizing:border-box;" onkeydown="if(event.key==='Enter') submitEmployeeLogin()">
+        </div>
+        <div id="empLoginError" style="display:none;color:var(--rp-red);font-size:0.82rem;padding:6px 0 4px;"></div>
+        <button onclick="submitEmployeeLogin()" class="btn-add-pnj" style="width:100%;height:42px;font-size:1rem;margin-top:14px;">🔓 SE CONNECTER</button>
+    </div>
+</div>
+
+<!-- ===== MODAL FICHE PERSONNELLE EMPLOYÉ ===== -->
+<div id="myProfileModal" class="modal">
+    <div class="modal-content" style="width:520px;max-width:95vw;">
+        <span class="close" onclick="closeMyProfileModal()">&times;</span>
+        <h2 id="myProfileTitle">📋 Ma Fiche</h2>
+        <div id="myProfileContent"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL DÉFINIR MDP EMPLOYÉ (Patron) ===== -->
+<div id="setPasswordModal" class="modal">
+    <div class="modal-content" style="width:360px;">
+        <span class="close" onclick="closeSetPasswordModal()">&times;</span>
+        <h2>🔑 Mot de Passe Compte</h2>
+        <p style="color:var(--unicorn-cyan);font-weight:700;margin:-8px 0 16px;font-size:1rem;" id="setPasswordEmpNom"></p>
+        <input type="hidden" id="setPasswordEmpIndex">
+        <div style="margin-bottom:18px;">
+            <label>Nouveau mot de passe</label>
+            <input type="text" id="setPasswordInput" placeholder="ex: unicorn2025" style="width:100%;padding:9px;margin-top:5px;box-sizing:border-box;" onkeydown="if(event.key==='Enter') submitSetPassword()">
+        </div>
+        <button onclick="submitSetPassword()" class="btn-add-pnj" style="width:100%;height:42px;font-size:1rem;">✅ ENREGISTRER</button>
+    </div>
+</div>
+
+<!-- ===== MODAL RECRUTEMENT ===== -->
+<div id="recruitModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeRecruitModal()">&times;</span>
+        <h2>👤 Nouveau Recrutement</h2>
+        <div style="margin-bottom:15px;">
+            <label>Nom complet</label>
+            <input type="text" id="newEmpName" placeholder="Prénom Nom" style="width:100%;padding:8px;margin-top:5px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Grade d'entrée</label>
+            <select id="newEmpGrade" style="width:100%;padding:8px;margin-top:5px;">
+                <option value="Stagiaire">Stagiaire</option>
+                <option value="Sécurité">Sécurité</option>
+                <option value="Danceur/se">Danceur/se</option>
+                <option value="Gérant">Gérant</option>
+            </select>
+        </div>
+        <div style="margin-bottom:20px;">
+            <label>Mot de passe du compte employé</label>
+            <input type="text" id="newEmpPassword" placeholder="ex: motdepasse123" style="width:100%;padding:8px;margin-top:5px;box-sizing:border-box;">
+            <p style="color:#888;font-size:0.75rem;margin:4px 0 0;">L'employé utilisera ce mot de passe pour accéder à son espace perso.</p>
+        </div>
+        <button onclick="submitRecruitment()" class="btn-add-pnj" style="width:100%;height:42px;font-size:1rem;">EMBAUCHER</button>
+    </div>
+</div>
+
+<!-- ===== MODAL VENTE PRODUIT ===== -->
+<div id="venteModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeVenteModal()">&times;</span>
+        <h2>🛍️ Enregistrer une Vente</h2>
+        <p id="venteEmpNom" style="color:var(--unicorn-pink);font-weight:bold;margin-bottom:15px;font-size:1.1rem;"></p>
+        <div style="margin-bottom:14px;">
+            <label>Produit</label>
+            <select id="venteProduitSelect" onchange="onVenteProduitChange()" style="width:100%;padding:8px;margin-top:5px;box-sizing:border-box;"></select>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label>Prix unitaire ($)</label>
+            <input type="number" id="ventePrix" value="0" style="width:100%;padding:8px;margin-top:5px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label>Quantité</label>
+            <input type="number" id="venteQuantite" value="1" min="1" style="width:100%;padding:8px;margin-top:5px;box-sizing:border-box;">
+        </div>
+        <button onclick="submitVente()" class="btn-add-pnj" style="width:100%;height:42px;font-size:1rem;">✅ VALIDER LA VENTE</button>
+    </div>
+</div>
+
+<!-- ===== MODAL CATALOGUE PRODUITS ===== -->
+<div id="productModal" class="modal">
+    <div class="modal-content" style="width:500px;max-width:95vw;">
+        <span class="close" onclick="closeProductModal()">&times;</span>
+        <h2>🛍️ Gestion du Catalogue</h2>
+        <div style="display:flex;gap:8px;margin-bottom:18px;align-items:flex-end;">
+            <div style="flex:2;">
+                <label>Nom du produit</label>
+                <input type="text" id="newProductName" placeholder="ex: Bag 1g" style="width:100%;padding:8px;margin-top:4px;box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+                <label>Prix ($)</label>
+                <input type="number" id="newProductPrice" value="0" style="width:100%;padding:8px;margin-top:4px;box-sizing:border-box;">
+            </div>
+            <button onclick="addProduct()" class="btn-add-pnj" style="padding:8px 14px;white-space:nowrap;height:36px;">+ Ajouter</button>
+        </div>
+        <div id="productModalList"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL PARTENARIATS ===== -->
+<div id="partenariatModal" class="modal">
+    <div class="modal-content" style="width:500px;max-width:95vw;">
+        <span class="close" onclick="closePartenariatModal()">&times;</span>
+        <h2>🤝 Gestion des Partenariats</h2>
+        <div style="display:flex;gap:8px;margin-bottom:18px;align-items:flex-end;">
+            <div style="flex:2;">
+                <label>Nom du partenariat</label>
+                <input type="text" id="newPartNom" placeholder="ex: LTD Little Séoul" style="width:100%;padding:8px;margin-top:4px;box-sizing:border-box;">
+            </div>
+            <div style="flex:0.8;">
+                <label>Réduction (%)</label>
+                <input type="number" id="newPartPct" value="0" min="0" max="100" style="width:100%;padding:8px;margin-top:4px;box-sizing:border-box;">
+            </div>
+            <button onclick="addPartenariat()" class="btn-add-pnj" style="padding:8px 14px;white-space:nowrap;height:36px;">+ Ajouter</button>
+        </div>
+        <div id="partenariatModalList"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
