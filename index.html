@@ -18,6 +18,7 @@
         <button onclick="showPage('dashboard')" id="btn-nav-dashboard">Dashboard</button>
         <button onclick="showPage('facturation')" id="btn-nav-facturation">Facturation</button>
         <button onclick="showPage('recettes')" id="btn-nav-recettes">🍹 Recettes</button>
+        <button onclick="showPage('stocks')" id="btn-nav-stocks">📦 Stocks</button>
         <button id="btn-nav-employe-compte" onclick="openEmployeeLoginModal()" style="border-color:rgba(127,255,212,0.5);color:rgba(127,255,212,0.8);">👤 Espace Employé</button>
         <button id="btn-nav-login" onclick="loginPatron()">🔒 Connexion Patron</button>
     </div>
@@ -230,9 +231,38 @@
         <div id="recettesGrid" class="recettes-grid"></div>
     </section>
 
-</div>
+    <!-- ===== PAGE STOCKS ===== -->
+    <section id="page-stocks" class="page" style="display:none;">
+        <div class="header-action">
+            <h1>📦 Gestion des Stocks</h1>
+            <div class="header-buttons">
+                <button class="btn-recruit btn-patron-only" onclick="resetAllStocks()">🔄 Réappro Stocks</button>
+            </div>
+        </div>
+        <p style="color:#aaa;font-size:0.85rem;margin-bottom:22px;">Les stocks se déduisent automatiquement à chaque vente. Le Patron peut ajuster les quantités manuellement.</p>
 
-<!-- ===== MODAL CONNEXION EMPLOYÉ ===== -->
+        <div class="stocks-layout">
+            <!-- Colonne gauche : stocks ingrédients -->
+            <div class="stocks-col">
+                <div class="stocks-section-header">
+                    <span>🧪 Stocks Ingrédients</span>
+                    <span class="stocks-badge" id="stocksAlertBadge"></span>
+                </div>
+                <div id="stocksIngredientsList" class="stocks-list"></div>
+            </div>
+
+            <!-- Colonne droite : ventes par recette -->
+            <div class="stocks-col">
+                <div class="stocks-section-header">
+                    <span>🍹 Ventes par Recette</span>
+                    <span style="color:#aaa;font-size:0.78rem;font-weight:400;">semaine en cours</span>
+                </div>
+                <div id="stocksVentesList" class="stocks-list"></div>
+            </div>
+        </div>
+    </section>
+
+</div>
 <div id="employeeLoginModal" class="modal">
     <div class="modal-content" style="width:360px;">
         <span class="close" onclick="closeEmployeeLoginModal()">&times;</span>

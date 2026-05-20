@@ -29,6 +29,7 @@ let currentEmployee = null; // objet employé connecté (ou null)
 // Migration
 if (!database.partenariats) database.partenariats = [];
 if (!database.finances) database.finances = { ajustementCA: 0 };
+if (!database.stocks) database.stocks = {}; // { "Rhum": 10, "Coca": 20, ... }
 if (database.employes.length === 0) {
     for (let i = 0; i < 25; i++) {
         database.employes.push({ id: i + 1, nom: "Aucun", grade: "Aucun Grade", primes: 0, apportClient: 0, ventes: [], password: "" });
@@ -61,6 +62,8 @@ window.onload = function () {
     renderPartenariatsFacturation();
     renderFactureItems();
     renderRecettesPage();
+    renderEmployePartenariats();
+    renderStocksPage();
     setSecurityMode(false);
     updateNavbarState();
 };
@@ -122,6 +125,7 @@ function setSecurityMode(adminMode) {
     populateBillPartenariatSelect();
     renderFactureItems();
     renderRecettesPage();
+    renderStocksPage();
 }
 
 // ==========================================
@@ -309,6 +313,7 @@ function showPage(pageId) {
     const btn = document.getElementById('btn-nav-' + pageId);
     if (btn) btn.classList.add('active');
     if (pageId === 'recettes') renderRecettesPage();
+    if (pageId === 'stocks') renderStocksPage();
     if (pageId === 'facturation') {
         if (!isPatron && !currentEmployee) {
             // Revenir sur la page employes et alerter
@@ -676,6 +681,7 @@ function processFacture() {
     factureItems.forEach(item => {
         const totalItem = item.sousTotal * (1 - reduction);
         emp.ventes.push({ produitNom: item.produitNom, prix: item.prixUnitaire, qte: item.qte, total: totalItem, date: new Date().toLocaleDateString('fr-FR') });
+        deductStocksForSale(item.produitNom, item.qte);
         sendToGoogleSheet(chauffeurNom, item.produitNom, item.qte, totalItem.toFixed(2));
     });
 
@@ -754,6 +760,7 @@ function submitVente() {
     const emp = database.employes[currentVenteIndex];
     emp.ventes.push({ produitNom, prix, qte, total, date: new Date().toLocaleDateString('fr-FR') });
     emp.apportClient += total;
+    deductStocksForSale(produitNom, qte);
     sendToGoogleSheet(emp.nom, produitNom, qte, total.toFixed(2));
     saveData(); renderEmployeeTable(); updateDashboard(); closeVenteModal();
     alert(`✅ ${qte}x ${produitNom} = ${total.toFixed(2)}$ enregistré !`);
@@ -956,7 +963,7 @@ function resetGlobalData() {
     if (confirm("🚨 RESET SEMAINE ? Toutes les ventes et apports seront remis à zéro.")) {
         database.employes.forEach(emp => { emp.primes = 0; emp.apportClient = 0; emp.ventes = []; });
         database.finances.ajustementCA = 0;
-        saveData(); renderEmployeeTable(); updateDashboard();
+        saveData(); renderEmployeeTable(); updateDashboard(); renderStocksPage();
     }
 }
 
@@ -1073,6 +1080,164 @@ const RECETTES_DEFAULT = [
 if (!database.recettes) {
     database.recettes = JSON.parse(JSON.stringify(RECETTES_DEFAULT));
     saveData();
+}
+
+// ==========================================
+// PAGE STOCKS
+// ==========================================
+
+function getStockKey(nom) {
+    return nom.trim().toLowerCase();
+}
+
+function ensureStocksExist() {
+    // Initialise les ingrédients absents à 0
+    (database.recettes || []).forEach(r => {
+        r.ingredients.forEach(ing => {
+            const key = getStockKey(ing.nom);
+            if (database.stocks[key] === undefined) database.stocks[key] = 0;
+        });
+    });
+}
+
+function renderStocksPage() {
+    ensureStocksExist();
+    renderStocksIngredients();
+    renderStocksVentes();
+}
+
+function renderStocksIngredients() {
+    const el = document.getElementById('stocksIngredientsList');
+    if (!el) return;
+
+    // Regrouper tous les ingrédients uniques de toutes les recettes
+    const ingrMap = {}; // key -> nom affiché
+    (database.recettes || []).forEach(r => {
+        r.ingredients.forEach(ing => {
+            const key = getStockKey(ing.nom);
+            if (!ingrMap[key]) ingrMap[key] = ing.nom;
+        });
+    });
+
+    const keys = Object.keys(ingrMap).sort((a, b) => ingrMap[a].localeCompare(ingrMap[b]));
+    if (keys.length === 0) {
+        el.innerHTML = '<p style="color:#666;font-style:italic;font-size:0.85rem;padding:10px;">Aucun ingrédient trouvé. Créez des recettes d\'abord.</p>';
+        return;
+    }
+
+    let alertCount = 0;
+    el.innerHTML = keys.map(key => {
+        const qte = database.stocks[key] || 0;
+        const nomAffiche = ingrMap[key];
+        const isLow = qte <= 3;
+        const isEmpty = qte === 0;
+        if (isLow) alertCount++;
+
+        const statusClass = isEmpty ? 'stock-empty' : isLow ? 'stock-low' : 'stock-ok';
+        const statusDot = isEmpty ? '🔴' : isLow ? '🟡' : '🟢';
+
+        return `
+        <div class="stock-row ${statusClass}">
+            <span class="stock-dot">${statusDot}</span>
+            <span class="stock-ingr-nom">${nomAffiche}</span>
+            <div class="stock-controls">
+                ${isPatron ? `<button onclick="changeStock('${key}', -1)" class="stock-btn stock-btn-minus">−</button>` : ''}
+                <span class="stock-qte">${qte}</span>
+                ${isPatron ? `<button onclick="changeStock('${key}', 1)" class="stock-btn stock-btn-plus">+</button>` : ''}
+                ${isPatron ? `<input type="number" min="0" value="${qte}" class="stock-input" onchange="setStock('${key}', this.value)" title="Modifier manuellement">` : ''}
+            </div>
+        </div>`;
+    }).join('');
+
+    // Badge alertes
+    const badge = document.getElementById('stocksAlertBadge');
+    if (badge) {
+        badge.textContent = alertCount > 0 ? `⚠️ ${alertCount} stock${alertCount > 1 ? 's' : ''} bas` : '';
+        badge.style.color = alertCount > 0 ? 'var(--unicorn-gold)' : '';
+    }
+}
+
+function renderStocksVentes() {
+    const el = document.getElementById('stocksVentesList');
+    if (!el) return;
+
+    if (!database.recettes || database.recettes.length === 0) {
+        el.innerHTML = '<p style="color:#666;font-style:italic;font-size:0.85rem;padding:10px;">Aucune recette.</p>';
+        return;
+    }
+
+    // Compter les ventes par recette (toutes semaines)
+    const ventesParRecette = {};
+    (database.employes || []).forEach(emp => {
+        (emp.ventes || []).forEach(v => {
+            const key = v.produitNom.trim().toLowerCase();
+            ventesParRecette[key] = (ventesParRecette[key] || 0) + (v.qte || 1);
+        });
+    });
+
+    // Trier par nb ventes décroissant
+    const recettes = [...(database.recettes || [])].sort((a, b) => {
+        const ka = a.nom.trim().toLowerCase();
+        const kb = b.nom.trim().toLowerCase();
+        return (ventesParRecette[kb] || 0) - (ventesParRecette[ka] || 0);
+    });
+
+    el.innerHTML = recettes.map((r, i) => {
+        const key = r.nom.trim().toLowerCase();
+        const nb = ventesParRecette[key] || 0;
+        const EMOJIS_LIST = ["🥃","🍹","🌿","🥤","🌊","📏","⚡","🍊","🌵","🍋","🍸"];
+        const emoji = EMOJIS_LIST[i % EMOJIS_LIST.length];
+        const barW = nb > 0 ? Math.min(100, Math.round((nb / Math.max(...Object.values(ventesParRecette), 1)) * 100)) : 0;
+
+        return `
+        <div class="stock-vente-row">
+            <span class="stock-vente-emoji">${emoji}</span>
+            <div class="stock-vente-info">
+                <div class="stock-vente-nom">${r.nom}</div>
+                <div class="stock-vente-bar-wrap">
+                    <div class="stock-vente-bar" style="width:${barW}%"></div>
+                </div>
+            </div>
+            <span class="stock-vente-count">${nb} <span style="color:#888;font-size:0.75rem;font-weight:400;">vente${nb !== 1 ? 's' : ''}</span></span>
+        </div>`;
+    }).join('');
+}
+
+function changeStock(key, delta) {
+    if (!isPatron) return;
+    if (!database.stocks) database.stocks = {};
+    database.stocks[key] = Math.max(0, (database.stocks[key] || 0) + delta);
+    saveData();
+    renderStocksIngredients();
+}
+
+function setStock(key, value) {
+    if (!isPatron) return;
+    if (!database.stocks) database.stocks = {};
+    database.stocks[key] = Math.max(0, parseInt(value) || 0);
+    saveData();
+    renderStocksIngredients();
+}
+
+function resetAllStocks() {
+    if (!isPatron) return;
+    if (!confirm("Réapprovisionner tous les stocks à 50 unités ?")) return;
+    ensureStocksExist();
+    Object.keys(database.stocks).forEach(k => { database.stocks[k] = 50; });
+    saveData();
+    renderStocksPage();
+}
+
+function deductStocksForSale(produitNom, qte) {
+    // Trouve la recette correspondante
+    const recette = (database.recettes || []).find(r => r.nom.toLowerCase() === produitNom.toLowerCase());
+    if (!recette) return;
+    if (!database.stocks) database.stocks = {};
+    recette.ingredients.forEach(ing => {
+        const key = getStockKey(ing.nom);
+        const consume = (ing.qte || 1) * qte;
+        database.stocks[key] = Math.max(0, (database.stocks[key] || 0) - consume);
+    });
 }
 
 // ==========================================
