@@ -59,7 +59,6 @@ window.onload = function () {
     renderCatalogue();
     renderCatalogueFacturation();
     renderPartenariatsFacturation();
-    renderEmployePartenariats();
     renderFactureItems();
     renderRecettesPage();
     setSecurityMode(false);
@@ -119,7 +118,6 @@ function setSecurityMode(adminMode) {
     renderCatalogue();
     renderCatalogueFacturation();
     renderPartenariatsFacturation();
-    renderEmployePartenariats();
     populateBillProduitSelect();
     populateBillPartenariatSelect();
     renderFactureItems();
@@ -456,7 +454,6 @@ function openPartenariatModal() {
 function closePartenariatModal() {
     document.getElementById('partenariatModal').style.display = "none";
     renderPartenariatsFacturation();
-    renderEmployePartenariats();
     populateBillPartenariatSelect();
 }
 
@@ -522,23 +519,6 @@ function renderPartenariatsFacturation() {
             <span class="catalogue-prix" style="color:var(--unicorn-cyan);">-${(p.reduction * 100).toFixed(0)}%</span>
         </div>`
     ).join('');
-}
-
-function renderEmployePartenariats() {
-    const el = document.getElementById('employsPartenariatList');
-    if (!el) return;
-    if (!database.partenariats || database.partenariats.length === 0) {
-        el.innerHTML = '<p style="color:#888;font-size:0.85rem;text-align:center;padding:10px 0;">Aucun partenariat actif.</p>';
-        return;
-    }
-    el.innerHTML = database.partenariats.map(p => `
-        <div class="catalogue-item partenariat-item">
-            <span class="catalogue-nom" style="display:flex;align-items:center;gap:6px;">
-                <span class="partenariat-dot"></span>${p.nom}
-            </span>
-            <span class="catalogue-prix partenariat-badge">-${(p.reduction * 100).toFixed(0)}%</span>
-        </div>
-    `).join('');
 }
 
 function populateBillPartenariatSelect() {
@@ -1137,7 +1117,10 @@ function renderRecettesPage() {
         ).join('');
 
         const editBtn = isPatron
-            ? `<button onclick="openEditRecetteModal(${recette.id})" class="recette-edit-btn">✏️ Modifier</button>`
+            ? `<div style="display:flex;gap:6px;">
+                <button onclick="openEditRecetteModal(${recette.id})" class="recette-edit-btn">✏️ Modifier</button>
+                <button onclick="deleteRecette(${recette.id})" class="recette-delete-btn">🗑️</button>
+               </div>`
             : '';
 
         return `
@@ -1181,6 +1164,22 @@ function closeEditRecetteModal() {
     document.getElementById('editRecetteModal').style.display = 'none';
     editRecetteId = null;
     renderRecettesPage();
+}
+
+function deleteRecette(id) {
+    if (!isPatron) return;
+    const recette = database.recettes.find(r => r.id === id);
+    if (!recette) return;
+    if (!confirm(`Supprimer la recette "${recette.nom}" ? Cette action est irréversible.`)) return;
+    database.recettes = database.recettes.filter(r => r.id !== id);
+    // Supprimer aussi du catalogue
+    database.catalogue = database.catalogue.filter(c => c.nom.toLowerCase() !== recette.nom.toLowerCase());
+    saveData();
+    renderRecettesPage();
+    renderCatalogue();
+    renderCatalogueFacturation();
+    populateBillProduitSelect();
+    populateVenteProduitSelect();
 }
 
 function renderEditRecetteIngrs(recette) {
@@ -1284,8 +1283,117 @@ function renderPrixCatalogueModal() {
     `).join('');
 }
 
+
 function updateCataloguePrix(id, value) {
     const prod = database.catalogue.find(p => p.id === id);
     if (prod) prod.prix = parseFloat(value) || 0;
     saveData();
 }
+
+// ==========================================
+// MODAL NOUVELLE RECETTE (Patron)
+// ==========================================
+let newRecetteIngrs = [];
+
+function openAddRecetteModal() {
+    if (!isPatron) return alert("Action réservée au Patron.");
+    newRecetteIngrs = [];
+    document.getElementById('newRecetteNom').value = '';
+    document.getElementById('newRecettePrix').value = '0';
+    document.getElementById('newRecetteIngrNom').value = '';
+    document.getElementById('newRecetteIngrQte').value = '1';
+    document.getElementById('newRecetteIngrsError').style.display = 'none';
+    renderNewRecetteIngrs();
+    document.getElementById('addRecetteModal').style.display = 'block';
+}
+
+function closeAddRecetteModal() {
+    document.getElementById('addRecetteModal').style.display = 'none';
+    newRecetteIngrs = [];
+}
+
+function renderNewRecetteIngrs() {
+    const el = document.getElementById('newRecetteIngrs');
+    if (!el) return;
+    if (newRecetteIngrs.length === 0) {
+        el.innerHTML = '<p style="color:#666;font-size:0.82rem;font-style:italic;padding:4px 0;">Aucun ingrédient ajouté pour l\'instant.</p>';
+        return;
+    }
+    el.innerHTML = newRecetteIngrs.map((ing, i) => `
+        <div style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.04);border:1px solid rgba(162,89,230,0.25);border-radius:6px;padding:7px 10px;">
+            <input type="number" value="${ing.qte}" min="1"
+                style="width:55px;padding:5px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;"
+                onchange="updateNewRecetteIngr(${i}, 'qte', this.value)">
+            <input type="text" value="${ing.nom}"
+                style="flex:1;padding:5px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;"
+                onchange="updateNewRecetteIngr(${i}, 'nom', this.value)">
+            <button onclick="removeNewRecetteIngr(${i})"
+                style="background:var(--rp-red);border:none;color:white;border-radius:4px;cursor:pointer;padding:4px 10px;font-size:0.85rem;">✕</button>
+        </div>
+    `).join('');
+}
+
+function addNewRecetteIngr() {
+    const nom = document.getElementById('newRecetteIngrNom').value.trim();
+    const qte = parseInt(document.getElementById('newRecetteIngrQte').value) || 1;
+    if (!nom) { document.getElementById('newRecetteIngrNom').focus(); return; }
+    newRecetteIngrs.push({ nom, qte });
+    renderNewRecetteIngrs();
+    document.getElementById('newRecetteIngrNom').value = '';
+    document.getElementById('newRecetteIngrQte').value = '1';
+    document.getElementById('newRecetteIngrNom').focus();
+    document.getElementById('newRecetteIngrsError').style.display = 'none';
+}
+
+function updateNewRecetteIngr(index, field, value) {
+    if (!newRecetteIngrs[index]) return;
+    newRecetteIngrs[index][field] = field === 'qte' ? (parseInt(value) || 1) : value;
+}
+
+function removeNewRecetteIngr(index) {
+    newRecetteIngrs.splice(index, 1);
+    renderNewRecetteIngrs();
+}
+
+function submitAddRecette() {
+    const nom = document.getElementById('newRecetteNom').value.trim();
+    const prix = parseFloat(document.getElementById('newRecettePrix').value) || 0;
+
+    if (!nom) {
+        document.getElementById('newRecetteNom').focus();
+        return alert("⚠️ Le nom de la recette est requis !");
+    }
+    if (newRecetteIngrs.length === 0) {
+        document.getElementById('newRecetteIngrsError').style.display = 'block';
+        return;
+    }
+
+    // Vérifier doublon
+    const existe = database.recettes.find(r => r.nom.toLowerCase() === nom.toLowerCase());
+    if (existe) return alert(`⚠️ Une recette "${nom}" existe déjà !`);
+
+    // Nouvel ID = max existant + 1
+    const newId = Math.max(0, ...database.recettes.map(r => r.id)) + 1;
+    database.recettes.push({ id: newId, nom, ingredients: [...newRecetteIngrs] });
+
+    // Ajouter ou mettre à jour le prix dans le catalogue
+    const prodExistant = database.catalogue.find(c => c.nom.toLowerCase() === nom.toLowerCase());
+    if (prodExistant) {
+        prodExistant.prix = prix;
+    } else {
+        database.catalogue.push({ id: Date.now(), nom, prix });
+    }
+
+    saveData();
+    closeAddRecetteModal();
+
+    // Tout rafraîchir
+    renderRecettesPage();
+    renderCatalogue();
+    renderCatalogueFacturation();
+    populateBillProduitSelect();
+    populateVenteProduitSelect();
+
+    alert(`✅ Recette "${nom}" créée avec succès !`);
+}
+

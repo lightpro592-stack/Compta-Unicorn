@@ -319,33 +319,6 @@ table input:focus, table select:focus {
     font-size: 0.95rem;
 }
 
-/* Partenariats — liste page employé */
-.partenariat-item {
-    background: rgba(127, 255, 212, 0.04);
-    border-color: rgba(127, 255, 212, 0.2);
-    transition: background 0.2s;
-}
-.partenariat-item:hover {
-    background: rgba(127, 255, 212, 0.09);
-}
-.partenariat-dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--unicorn-cyan);
-    flex-shrink: 0;
-}
-.partenariat-badge {
-    color: var(--unicorn-cyan) !important;
-    background: rgba(127, 255, 212, 0.12);
-    border: 1px solid rgba(127, 255, 212, 0.3);
-    border-radius: 12px;
-    padding: 1px 8px;
-    font-size: 0.82rem;
-    white-space: nowrap;
-}
-
 /* ========================= FACTURATION ========================= */
 .billing-grid {
     display: grid;
@@ -634,7 +607,6 @@ table input:focus, table select:focus {
 }
 
 .recette-edit-btn {
-    margin-left: auto;
     background: rgba(162, 89, 230, 0.2);
     border: 1px solid rgba(162, 89, 230, 0.5);
     color: var(--unicorn-purple);
@@ -651,6 +623,25 @@ table input:focus, table select:focus {
 
 .recette-edit-btn:hover {
     background: rgba(162, 89, 230, 0.4);
+    color: white;
+}
+
+.recette-delete-btn {
+    background: rgba(231, 76, 60, 0.15);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    color: var(--rp-red);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.recette-delete-btn:hover {
+    background: rgba(231, 76, 60, 0.35);
     color: white;
 }
 
@@ -749,8 +740,9 @@ table input:focus, table select:focus {
     font-size: 0.85rem;
 }
 
-/* Hide edit btn in employee mode */
-.is-employee .recette-edit-btn {
+/* Hide edit/delete btns in employee mode */
+.is-employee .recette-edit-btn,
+.is-employee .recette-delete-btn {
     display: none !important;
 }
 

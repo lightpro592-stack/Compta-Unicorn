@@ -222,6 +222,7 @@
         <div class="header-action">
             <h1>🍹 Recettes & Prix</h1>
             <div class="header-buttons">
+                <button class="btn-recruit btn-patron-only" onclick="openAddRecetteModal()">➕ Nouvelle Recette</button>
                 <button class="btn-recruit btn-patron-only" onclick="openPrixCatalogueModal()">💰 Modifier les Prix</button>
             </div>
         </div>
@@ -414,6 +415,40 @@
         <span class="close" onclick="closeVentesDetailModal()">&times;</span>
         <h2>📊 Ventes de <span id="ventesDetailNom" style="color:var(--unicorn-cyan);"></span></h2>
         <div id="ventesDetailContent"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL NOUVELLE RECETTE ===== -->
+<div id="addRecetteModal" class="modal">
+    <div class="modal-content" style="width:520px;max-width:95vw;max-height:88vh;overflow-y:auto;">
+        <span class="close" onclick="closeAddRecetteModal()">&times;</span>
+        <h2>🍹 Nouvelle Recette</h2>
+
+        <div style="margin-bottom:16px;background:rgba(162,89,230,0.1);border:1px solid rgba(162,89,230,0.3);border-radius:8px;padding:14px;">
+            <label style="color:var(--unicorn-purple);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:6px;">🍸 Nom de la recette</label>
+            <input type="text" id="newRecetteNom" placeholder="ex: Piña Colada" style="width:100%;padding:9px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:1rem;box-sizing:border-box;">
+        </div>
+
+        <div style="margin-bottom:16px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:14px;">
+            <label style="color:var(--unicorn-gold);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:6px;">💰 Prix de vente ($)</label>
+            <input type="number" id="newRecettePrix" value="0" step="0.01" min="0" style="width:130px;padding:8px;background:rgba(255,255,255,0.07);color:var(--unicorn-gold);border:1px solid rgba(255,215,0,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;">
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="color:#aaa;font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:10px;">🧪 Ingrédients</label>
+            <div id="newRecetteIngrs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+            <div style="display:flex;gap:8px;align-items:center;padding:10px;background:rgba(162,89,230,0.1);border:1px dashed rgba(162,89,230,0.3);border-radius:7px;">
+                <input type="number" id="newRecetteIngrQte" value="1" min="1" style="width:55px;padding:6px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;" placeholder="Qté">
+                <input type="text" id="newRecetteIngrNom" placeholder="Nom de l'ingrédient..." style="flex:1;padding:6px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;" onkeydown="if(event.key==='Enter') addNewRecetteIngr()">
+                <button onclick="addNewRecetteIngr()" class="btn-add-pnj" style="padding:6px 14px;">+ Ajouter</button>
+            </div>
+            <p id="newRecetteIngrsError" style="color:var(--rp-red);font-size:0.8rem;margin:6px 0 0;display:none;">⚠️ Ajoute au moins un ingrédient.</p>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+            <button onclick="submitAddRecette()" class="btn-validate-facture" style="flex:1;">✅ CRÉER LA RECETTE</button>
+            <button onclick="closeAddRecetteModal()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.2);color:white;padding:12px 20px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">Annuler</button>
+        </div>
     </div>
 </div>
 
