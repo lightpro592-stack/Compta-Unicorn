@@ -236,6 +236,8 @@
         <div class="header-action">
             <h1>📦 Gestion des Stocks</h1>
             <div class="header-buttons">
+                <button class="btn-recruit btn-patron-only" onclick="openAddRecetteModalFromStocks()">🍹 Créer une Recette</button>
+                <button class="btn-recruit btn-patron-only" onclick="openAddCompoModal()">🧪 Créer une Compo</button>
                 <button class="btn-recruit btn-patron-only" onclick="resetAllStocks()">🔄 Réappro Stocks</button>
             </div>
         </div>
@@ -478,6 +480,56 @@
         <div style="display:flex;gap:10px;margin-top:20px;">
             <button onclick="submitAddRecette()" class="btn-validate-facture" style="flex:1;">✅ CRÉER LA RECETTE</button>
             <button onclick="closeAddRecetteModal()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.2);color:white;padding:12px 20px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL GESTION COMPOS ===== -->
+<div id="addCompoModal" class="modal">
+    <div class="modal-content" style="width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+        <span class="close" onclick="closeAddCompoModal()">&times;</span>
+        <h2>🧪 Gestion des Compositions</h2>
+        <p style="color:#aaa;font-size:0.83rem;margin:-10px 0 18px;">Articles du catalogue <strong style="color:var(--unicorn-cyan);">sans recette associée</strong> (planche, pack, entrée...). Ils apparaissent dans le catalogue et la facturation.</p>
+
+        <!-- Formulaire ajout -->
+        <div style="background:rgba(127,255,212,0.06);border:1px solid rgba(127,255,212,0.2);border-radius:10px;padding:16px;margin-bottom:20px;">
+            <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--unicorn-cyan);font-weight:700;margin-bottom:12px;">➕ Nouvelle composition</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                <div style="flex:2;min-width:160px;">
+                    <label style="color:#aaa;font-size:0.75rem;display:block;margin-bottom:4px;">Nom</label>
+                    <input type="text" id="newCompoNom" placeholder="ex: Planche Apéro, Pack VIP..." style="width:100%;padding:8px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(127,255,212,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:0.95rem;box-sizing:border-box;" onkeydown="if(event.key==='Enter') submitAddCompo()">
+                </div>
+                <div style="flex:0.8;min-width:100px;">
+                    <label style="color:#aaa;font-size:0.75rem;display:block;margin-bottom:4px;">Prix ($)</label>
+                    <input type="number" id="newCompoPrix" value="0" step="0.01" min="0" style="width:100%;padding:8px;background:rgba(255,255,255,0.07);color:var(--unicorn-gold);border:1px solid rgba(255,215,0,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:700;box-sizing:border-box;">
+                </div>
+                <button onclick="submitAddCompo()" class="btn-add-pnj" style="padding:8px 16px;white-space:nowrap;height:36px;">+ Ajouter</button>
+            </div>
+        </div>
+
+        <!-- Liste des compos existantes -->
+        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;font-weight:700;margin-bottom:10px;">📋 Compositions existantes</div>
+        <div id="compoModalList"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL ÉDITION COMPO ===== -->
+<div id="editCompoModal" class="modal">
+    <div class="modal-content" style="width:420px;max-width:95vw;">
+        <span class="close" onclick="closeEditCompoModal()">&times;</span>
+        <h2>✏️ Modifier la Composition</h2>
+        <input type="hidden" id="editCompoId">
+        <div style="margin-bottom:16px;">
+            <label style="color:var(--unicorn-cyan);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:6px;">🧪 Nom</label>
+            <input type="text" id="editCompoNom" style="width:100%;padding:9px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(127,255,212,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:1rem;box-sizing:border-box;" onkeydown="if(event.key==='Enter') submitEditCompo()">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="color:var(--unicorn-gold);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:6px;">💰 Prix de vente ($)</label>
+            <input type="number" id="editCompoPrix" value="0" step="0.01" min="0" style="width:130px;padding:8px;background:rgba(255,255,255,0.07);color:var(--unicorn-gold);border:1px solid rgba(255,215,0,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;">
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="submitEditCompo()" class="btn-validate-facture" style="flex:1;">✅ ENREGISTRER</button>
+            <button onclick="closeEditCompoModal()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.2);color:white;padding:12px 20px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">Annuler</button>
         </div>
     </div>
 </div>

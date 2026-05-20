@@ -1562,3 +1562,139 @@ function submitAddRecette() {
     alert(`✅ Recette "${nom}" créée avec succès !`);
 }
 
+
+
+// ==========================================
+// RACCOURCI STOCKS → NOUVELLE RECETTE
+// ==========================================
+function openAddRecetteModalFromStocks() {
+    if (!isPatron) return alert("Action réservée au Patron.");
+    openAddRecetteModal();
+}
+
+// ==========================================
+// HELPERS COMPO
+// ==========================================
+function isCompo(produit) {
+    // Une compo = article catalogue sans recette associée
+    return !(database.recettes || []).some(r => r.nom.toLowerCase() === produit.nom.toLowerCase());
+}
+
+function refreshAfterCompoChange() {
+    renderCatalogue();
+    renderCatalogueFacturation();
+    populateBillProduitSelect();
+    populateVenteProduitSelect();
+}
+
+// ==========================================
+// MODAL GESTION COMPOS
+// ==========================================
+function openAddCompoModal() {
+    if (!isPatron) return alert("Action réservée au Patron.");
+    document.getElementById('newCompoNom').value = '';
+    document.getElementById('newCompoPrix').value = '0';
+    renderCompoModalList();
+    document.getElementById('addCompoModal').style.display = 'block';
+}
+
+function closeAddCompoModal() {
+    document.getElementById('addCompoModal').style.display = 'none';
+    refreshAfterCompoChange();
+}
+
+function renderCompoModalList() {
+    const el = document.getElementById('compoModalList');
+    if (!el) return;
+    const compos = database.catalogue.filter(isCompo);
+    if (compos.length === 0) {
+        el.innerHTML = '<p style="color:#666;font-style:italic;font-size:0.85rem;padding:12px;text-align:center;">Aucune composition créée pour l\'instant.</p>';
+        return;
+    }
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+            <th style="text-align:left;padding:7px 8px;border-bottom:1px solid #444;color:var(--unicorn-gold);font-size:0.72rem;text-transform:uppercase;">Nom</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid #444;color:var(--unicorn-gold);font-size:0.72rem;text-transform:uppercase;">Prix</th>
+            <th style="padding:6px;border-bottom:1px solid #444;width:90px;"></th>
+        </tr></thead>
+        <tbody>
+            ${compos.map(p => `
+                <tr>
+                    <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);font-weight:600;">${p.nom}</td>
+                    <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:right;color:var(--unicorn-gold);font-weight:700;">${p.prix.toFixed(2)}$</td>
+                    <td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);text-align:center;">
+                        <div style="display:flex;gap:4px;justify-content:center;">
+                            <button onclick="openEditCompoModal(${p.id})" style="background:rgba(127,255,212,0.15);border:1px solid rgba(127,255,212,0.4);color:var(--unicorn-cyan);border-radius:4px;cursor:pointer;padding:3px 9px;font-size:0.8rem;font-family:'Rajdhani',sans-serif;font-weight:700;">✏️</button>
+                            <button onclick="deleteCompo(${p.id})" style="background:rgba(231,76,60,0.2);border:1px solid var(--rp-red);color:var(--rp-red);border-radius:4px;cursor:pointer;padding:3px 9px;font-size:0.8rem;">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>`;
+}
+
+function submitAddCompo() {
+    const nom = document.getElementById('newCompoNom').value.trim();
+    const prix = parseFloat(document.getElementById('newCompoPrix').value) || 0;
+    if (!nom) { document.getElementById('newCompoNom').focus(); return alert("⚠️ Le nom est requis !"); }
+    const existe = database.catalogue.find(c => c.nom.toLowerCase() === nom.toLowerCase());
+    if (existe) return alert(`⚠️ "${nom}" existe déjà dans le catalogue !`);
+    database.catalogue.push({ id: Date.now(), nom, prix });
+    saveData();
+    document.getElementById('newCompoNom').value = '';
+    document.getElementById('newCompoPrix').value = '0';
+    document.getElementById('newCompoNom').focus();
+    renderCompoModalList();
+}
+
+function deleteCompo(id) {
+    if (!isPatron) return;
+    const p = database.catalogue.find(c => c.id === id);
+    if (!p) return;
+    if (!isCompo(p)) return alert("Ce produit a une recette associée — supprime-le depuis la page Recettes.");
+    if (!confirm(`Supprimer la compo "${p.nom}" ?`)) return;
+    database.catalogue = database.catalogue.filter(c => c.id !== id);
+    saveData();
+    renderCompoModalList();
+    refreshAfterCompoChange();
+}
+
+// ==========================================
+// MODAL ÉDITION COMPO
+// ==========================================
+function openEditCompoModal(id) {
+    if (!isPatron) return;
+    const p = database.catalogue.find(c => c.id === id);
+    if (!p) return;
+    document.getElementById('editCompoId').value = id;
+    document.getElementById('editCompoNom').value = p.nom;
+    document.getElementById('editCompoPrix').value = p.prix;
+    document.getElementById('editCompoModal').style.display = 'block';
+}
+
+function closeEditCompoModal() {
+    document.getElementById('editCompoModal').style.display = 'none';
+}
+
+function submitEditCompo() {
+    const id = parseInt(document.getElementById('editCompoId').value);
+    const nom = document.getElementById('editCompoNom').value.trim();
+    const prix = parseFloat(document.getElementById('editCompoPrix').value) || 0;
+    if (!nom) { document.getElementById('editCompoNom').focus(); return alert("⚠️ Le nom est requis !"); }
+
+    // Vérifier doublon sur un autre article
+    const doublon = database.catalogue.find(c => c.nom.toLowerCase() === nom.toLowerCase() && c.id !== id);
+    if (doublon) return alert(`⚠️ "${nom}" existe déjà dans le catalogue !`);
+
+    const p = database.catalogue.find(c => c.id === id);
+    if (!p) return;
+    p.nom = nom;
+    p.prix = prix;
+    saveData();
+
+    closeEditCompoModal();
+    renderCompoModalList();
+    refreshAfterCompoChange();
+    alert(`✅ Composition "${nom}" mise à jour !`);
+}
