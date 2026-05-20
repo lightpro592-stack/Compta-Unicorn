@@ -47,6 +47,11 @@ function saveData() { localStorage.setItem('unicornData', JSON.stringify(databas
 window.onload = function () {
     isPatron = false;
     currentEmployee = null;
+    // Migration recettes si absent
+    if (!database.recettes) {
+        database.recettes = JSON.parse(JSON.stringify(RECETTES_DEFAULT));
+        saveData();
+    }
     renderEmployeeTable();
     updateNBEmployes();
     updateDashboard();
@@ -54,7 +59,9 @@ window.onload = function () {
     renderCatalogue();
     renderCatalogueFacturation();
     renderPartenariatsFacturation();
+    renderEmployePartenariats();
     renderFactureItems();
+    renderRecettesPage();
     setSecurityMode(false);
     updateNavbarState();
 };
@@ -112,9 +119,11 @@ function setSecurityMode(adminMode) {
     renderCatalogue();
     renderCatalogueFacturation();
     renderPartenariatsFacturation();
+    renderEmployePartenariats();
     populateBillProduitSelect();
     populateBillPartenariatSelect();
     renderFactureItems();
+    renderRecettesPage();
 }
 
 // ==========================================
@@ -301,6 +310,45 @@ function showPage(pageId) {
     if (page) page.style.display = 'block';
     const btn = document.getElementById('btn-nav-' + pageId);
     if (btn) btn.classList.add('active');
+    if (pageId === 'recettes') renderRecettesPage();
+    if (pageId === 'facturation') {
+        if (!isPatron && !currentEmployee) {
+            // Revenir sur la page employes et alerter
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('page-employes').style.display = 'block';
+            document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-nav-employes').classList.add('active');
+            alert("🔒 Connecte-toi à ton compte employé pour accéder à la facturation.");
+            return;
+        }
+        autoSelectEmployeeInFacture();
+    }
+}
+
+function autoSelectEmployeeInFacture() {
+    const select = document.getElementById('billEmployeSelect');
+    const montantInput = document.getElementById('billMontant');
+    if (!select) return;
+    if (currentEmployee && !isPatron) {
+        // Forcer son propre nom, verrouiller
+        select.value = currentEmployee.nom;
+        select.disabled = true;
+        select.style.opacity = '0.85';
+        select.style.cursor = 'not-allowed';
+        select.style.borderColor = 'rgba(127,255,212,0.5)';
+        // Prix géré via billPrixDisplay (champ caché pour non-patron)
+    } else if (!isPatron && !currentEmployee) {
+        select.disabled = true;
+        select.style.opacity = '0.4';
+        select.style.cursor = 'not-allowed';
+    } else {
+        // Patron : tout libre
+        select.disabled = false;
+        select.style.opacity = '';
+        select.style.cursor = '';
+        select.style.borderColor = '';
+
+    }
 }
 
 // ==========================================
@@ -371,13 +419,17 @@ function renderProductModalList() {
 function renderCatalogue() {
     const el = document.getElementById('catalogueList');
     if (!el) return;
-    if (database.catalogue.length === 0) {
-        el.innerHTML = '<p style="color:#888;font-size:0.85rem;text-align:center;">Aucun produit configuré.</p>';
+    // Catalogue employés = toutes les recettes avec leur prix
+    const recettes = database.recettes || [];
+    if (recettes.length === 0) {
+        el.innerHTML = '<p style="color:#888;font-size:0.85rem;text-align:center;">Aucune recette configurée.</p>';
         return;
     }
-    el.innerHTML = database.catalogue.map(p =>
-        `<div class="catalogue-item"><span class="catalogue-nom">${p.nom}</span><span class="catalogue-prix">${p.prix.toFixed(2)}$</span></div>`
-    ).join('');
+    el.innerHTML = recettes.map(r => {
+        const prod = database.catalogue.find(c => c.nom.toLowerCase() === r.nom.toLowerCase());
+        const prix = prod ? prod.prix.toFixed(2) + '$' : '—';
+        return `<div class="catalogue-item"><span class="catalogue-nom">${r.nom}</span><span class="catalogue-prix">${prix}</span></div>`;
+    }).join('');
 }
 
 function renderCatalogueFacturation() {
@@ -404,6 +456,7 @@ function openPartenariatModal() {
 function closePartenariatModal() {
     document.getElementById('partenariatModal').style.display = "none";
     renderPartenariatsFacturation();
+    renderEmployePartenariats();
     populateBillPartenariatSelect();
 }
 
@@ -471,6 +524,23 @@ function renderPartenariatsFacturation() {
     ).join('');
 }
 
+function renderEmployePartenariats() {
+    const el = document.getElementById('employsPartenariatList');
+    if (!el) return;
+    if (!database.partenariats || database.partenariats.length === 0) {
+        el.innerHTML = '<p style="color:#888;font-size:0.85rem;text-align:center;padding:10px 0;">Aucun partenariat actif.</p>';
+        return;
+    }
+    el.innerHTML = database.partenariats.map(p => `
+        <div class="catalogue-item partenariat-item">
+            <span class="catalogue-nom" style="display:flex;align-items:center;gap:6px;">
+                <span class="partenariat-dot"></span>${p.nom}
+            </span>
+            <span class="catalogue-prix partenariat-badge">-${(p.reduction * 100).toFixed(0)}%</span>
+        </div>
+    `).join('');
+}
+
 function populateBillPartenariatSelect() {
     const s = document.getElementById('billPartenariatSelect');
     if (!s) return;
@@ -487,10 +557,14 @@ function populateBillPartenariatSelect() {
 function populateBillProduitSelect() {
     const s = document.getElementById('billProduitSelect');
     if (!s) return;
+    // Alimenter depuis les recettes (avec prix du catalogue lié)
+    const recettes = database.recettes || [];
     s.innerHTML = '<option value="">— Choisir un produit —</option>' +
-        database.catalogue.map(p =>
-            `<option value="${p.id}" data-prix="${p.prix}">${p.nom} (${p.prix.toFixed(2)}$)</option>`
-        ).join('');
+        recettes.map(r => {
+            const prod = database.catalogue.find(c => c.nom.toLowerCase() === r.nom.toLowerCase());
+            const prix = prod ? prod.prix : 0;
+            return `<option value="r_${r.id}" data-prix="${prix}">${r.nom} (${prix.toFixed(2)}$)</option>`;
+        }).join('');
 }
 
 function onProduitChange() {
@@ -498,7 +572,11 @@ function onProduitChange() {
     const sel = s?.options[s.selectedIndex];
     const prix = parseFloat(sel?.dataset?.prix) || 0;
     const montantInput = document.getElementById('billMontant');
-    if (montantInput) montantInput.value = prix.toFixed(2);
+    const prixDisplay = document.getElementById('billPrixDisplay');
+    if (montantInput) {
+        montantInput.value = prix.toFixed(2);
+    }
+    if (prixDisplay) prixDisplay.innerText = prix.toFixed(2) + '$';
     calculateFactureTotal();
 }
 
@@ -525,14 +603,22 @@ function calculateFactureTotal() {
 function addItemToFacture() {
     const produitSelect = document.getElementById('billProduitSelect');
     const sel = produitSelect?.options[produitSelect.selectedIndex];
-    const montant = parseFloat(document.getElementById('billMontant').value) || 0;
     const qte = parseInt(document.getElementById('billQuantite').value) || 1;
 
     if (!sel || !sel.value) return alert("Sélectionnez un produit !");
-    if (montant <= 0) return alert("Prix unitaire invalide !");
     if (qte <= 0) return alert("Quantité invalide !");
 
-    const produitNom = sel.text.split(' (')[0];
+    // Prix : toujours depuis le data-prix du select (non modifiable par l'employé)
+    const montant = isPatron
+        ? (parseFloat(document.getElementById('billMontant').value) || 0)
+        : (parseFloat(sel.dataset.prix) || 0);
+
+    if (montant <= 0) return alert("Prix unitaire invalide ! Définis le prix dans la page Recettes.");
+
+    // Résoudre nom depuis recette
+    const recetteId = parseInt(sel.value.replace('r_', ''));
+    const recette = (database.recettes || []).find(r => r.id === recetteId);
+    const produitNom = recette ? recette.nom : sel.text.split(' (')[0];
     const sousTotal = montant * qte;
 
     factureItems.push({ produitNom, prixUnitaire: montant, qte, sousTotal });
@@ -541,6 +627,8 @@ function addItemToFacture() {
 
     produitSelect.value = "";
     document.getElementById('billMontant').value = "0";
+    const prixDisplay = document.getElementById('billPrixDisplay');
+    if (prixDisplay) prixDisplay.innerText = '—';
     document.getElementById('billQuantite').value = "1";
 }
 
@@ -578,12 +666,15 @@ function clearFacture() {
     document.getElementById('billEmployeSelect').value = "";
     document.getElementById('billProduitSelect').value = "";
     document.getElementById('billMontant').value = "0";
+    const pd = document.getElementById('billPrixDisplay');
+    if (pd) pd.innerText = '—';
     document.getElementById('billQuantite').value = "1";
     document.getElementById('billPartenariatSelect').value = "";
     calculateFactureTotal();
 }
 
 function processFacture() {
+    if (!isPatron && !currentEmployee) return alert("🔒 Tu dois te connecter à ton compte employé pour valider une facture.");
     const chauffeurNom = document.getElementById('billEmployeSelect').value;
     if (!chauffeurNom) return alert("Sélectionnez un chauffeur !");
     if (factureItems.length === 0) return alert("Ajoutez au moins un produit à la facture !");
@@ -620,6 +711,7 @@ function processFacture() {
 // MODAL VENTE (depuis tableau employés)
 // ==========================================
 function openVenteModal(index) {
+    if (!isPatron && !currentEmployee) return alert("🔒 Tu dois te connecter à ton compte employé pour enregistrer une vente.");
     currentVenteIndex = index;
     const emp = database.employes[index];
     document.getElementById('venteEmpNom').innerText = `👤 ${emp.nom}`;
@@ -635,32 +727,56 @@ function closeVenteModal() {
 function populateVenteProduitSelect() {
     const s = document.getElementById('venteProduitSelect');
     if (!s) return;
+    const recettes = database.recettes || [];
     s.innerHTML = '<option value="">— Choisir un produit —</option>' +
-        database.catalogue.map(p => `<option value="${p.id}" data-prix="${p.prix}">${p.nom} (${p.prix.toFixed(2)}$)</option>`).join('');
-    document.getElementById('ventePrix').value = "0";
+        recettes.map(r => {
+            const prod = database.catalogue.find(c => c.nom.toLowerCase() === r.nom.toLowerCase());
+            const prix = prod ? prod.prix : 0;
+            return `<option value="r_${r.id}" data-prix="${prix}">${r.nom} (${prix.toFixed(2)}$)</option>`;
+        }).join('');
+    const prixInput = document.getElementById('ventePrix');
+    prixInput.value = "0";
+    if (!isPatron) {
+        prixInput.readOnly = true;
+        prixInput.style.opacity = '0.7';
+        prixInput.style.cursor = 'not-allowed';
+    } else {
+        prixInput.readOnly = false;
+        prixInput.style.opacity = '';
+        prixInput.style.cursor = '';
+    }
 }
 
 function onVenteProduitChange() {
     const s = document.getElementById('venteProduitSelect');
     const sel = s?.options[s.selectedIndex];
-    document.getElementById('ventePrix').value = (parseFloat(sel?.dataset?.prix) || 0).toFixed(2);
+    const prixInput = document.getElementById('ventePrix');
+    prixInput.value = (parseFloat(sel?.dataset?.prix) || 0).toFixed(2);
+    if (!isPatron) {
+        prixInput.readOnly = true;
+        prixInput.style.opacity = '0.7';
+        prixInput.style.cursor = 'not-allowed';
+        prixInput.style.borderColor = 'rgba(162,89,230,0.2)';
+    }
 }
 
 function submitVente() {
     const s = document.getElementById('venteProduitSelect');
     const sel = s?.options[s.selectedIndex];
     if (!sel || !sel.value) return alert("Sélectionnez un produit !");
-    const produit = database.catalogue.find(p => p.id === parseInt(sel.value));
-    if (!produit) return;
+    // Résoudre depuis recettes (valeur = r_ID)
+    const recetteId = parseInt(sel.value.replace('r_', ''));
+    const recette = (database.recettes || []).find(r => r.id === recetteId);
+    const produitNom = recette ? recette.nom : sel.text.split(' (')[0];
     const prix = parseFloat(document.getElementById('ventePrix').value) || 0;
     const qte = parseInt(document.getElementById('venteQuantite').value) || 1;
     const total = prix * qte;
     const emp = database.employes[currentVenteIndex];
-    emp.ventes.push({ produitNom: produit.nom, prix, qte, total, date: new Date().toLocaleDateString('fr-FR') });
+    emp.ventes.push({ produitNom, prix, qte, total, date: new Date().toLocaleDateString('fr-FR') });
     emp.apportClient += total;
-    sendToGoogleSheet(emp.nom, produit.nom, qte, total.toFixed(2));
+    sendToGoogleSheet(emp.nom, produitNom, qte, total.toFixed(2));
     saveData(); renderEmployeeTable(); updateDashboard(); closeVenteModal();
-    alert(`✅ ${qte}x ${produit.nom} = ${total.toFixed(2)}$ enregistré !`);
+    alert(`✅ ${qte}x ${produitNom} = ${total.toFixed(2)}$ enregistré !`);
 }
 
 // ==========================================
@@ -728,7 +844,7 @@ function renderEmployeeTable() {
             <td>${salaireAmt.toFixed(2)}$</td>
             <td>
                 <div style="display:flex;align-items:center;gap:6px;">
-                    <span style="font-size:0.8rem;color:#ccc;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${ventesSummary}">${ventesSummary}</span>
+                    ${isActive && emp.ventes.length > 0 ? `<button onclick="openVentesDetailModal(${index})" style="background:rgba(162,89,230,0.2);border:1px solid rgba(162,89,230,0.5);color:var(--unicorn-purple);border-radius:4px;cursor:pointer;padding:3px 10px;font-size:0.75rem;white-space:nowrap;font-family:'Rajdhani',sans-serif;font-weight:700;">📊 ${emp.ventes.length} vente${emp.ventes.length > 1 ? 's' : ''}</button>` : isActive ? '<span style="color:#555;font-size:0.8rem;">—</span>' : ''}
                     ${isActive ? `<button class="btn-vente-emp" onclick="openVenteModal(${index})" style="background:var(--unicorn-purple);border:none;color:white;border-radius:4px;cursor:pointer;padding:3px 8px;font-size:0.75rem;white-space:nowrap;">+ Vente</button>` : ''}
                 </div>
             </td>
@@ -749,6 +865,51 @@ function handleUIUpdate(index, field, value) {
     emp[field] = (field === 'primes') ? (parseFloat(value) || 0) : value;
     saveData(); renderEmployeeTable(); updateDashboard();
 }
+// ==========================================
+// MODAL DÉTAIL VENTES EMPLOYÉ
+// ==========================================
+function openVentesDetailModal(index) {
+    const emp = database.employes[index];
+    document.getElementById('ventesDetailNom').innerText = emp.nom;
+
+    // Agréger les ventes par produit
+    const agregat = {};
+    (emp.ventes || []).forEach(v => {
+        if (!agregat[v.produitNom]) agregat[v.produitNom] = { qte: 0, total: 0 };
+        agregat[v.produitNom].qte += v.qte;
+        agregat[v.produitNom].total += v.total;
+    });
+
+    const rows = Object.entries(agregat);
+    const totalGlobal = rows.reduce((s, [, d]) => s + d.total, 0);
+
+    const el = document.getElementById('ventesDetailContent');
+    el.innerHTML = rows.length === 0
+        ? '<p style="text-align:center;color:#666;font-style:italic;padding:20px;">Aucune vente.</p>'
+        : `
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+            ${rows.map(([nom, data]) => `
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:8px;border-left:3px solid var(--unicorn-purple);">
+                    <span style="font-size:1.1rem;">🍹</span>
+                    <span style="flex:1;font-weight:600;font-size:0.95rem;">${nom}</span>
+                    <span style="background:rgba(162,89,230,0.25);color:var(--unicorn-cyan);font-weight:700;font-family:'Rajdhani',sans-serif;padding:2px 10px;border-radius:20px;font-size:0.9rem;">x${data.qte}</span>
+                    <span style="color:var(--unicorn-gold);font-weight:700;font-family:'Rajdhani',sans-serif;min-width:80px;text-align:right;">${data.total.toFixed(2)}$</span>
+                </div>
+            `).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;">
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:0.8rem;color:#aaa;">Total général</span>
+            <span style="color:var(--unicorn-gold);font-weight:700;font-family:'Rajdhani',sans-serif;font-size:1.2rem;">${totalGlobal.toFixed(2)}$</span>
+        </div>`;
+
+    document.getElementById('ventesDetailModal').style.display = 'block';
+}
+
+function closeVentesDetailModal() {
+    document.getElementById('ventesDetailModal').style.display = 'none';
+}
+
+
 
 // ==========================================
 // GESTION PNJ
@@ -829,10 +990,302 @@ function populateSelects() {
     });
     populateBillProduitSelect();
     populateBillPartenariatSelect();
+    if (currentEmployee) autoSelectEmployeeInFacture();
 }
 
 function updateNBEmployes() {
     const count = database.employes.filter(e => e.nom !== "Aucun").length;
     const el = document.getElementById('nbEmployes');
     if (el) el.innerText = count;
+}
+
+// ==========================================
+// RECETTES — DONNÉES PAR DÉFAUT
+// ==========================================
+const RECETTES_DEFAULT = [
+    {
+        id: 1, nom: "Vodka-Jus de fruits",
+        ingredients: [
+            { nom: "Jus de fruits", qte: 1 },
+            { nom: "Vodka", qte: 1 },
+            { nom: "Ice", qte: 1 }
+        ]
+    },
+    {
+        id: 2, nom: "Shooter",
+        ingredients: [
+            { nom: "Menthe", qte: 1 },
+            { nom: "Vodka", qte: 1 }
+        ]
+    },
+    {
+        id: 3, nom: "Sex and the beach",
+        ingredients: [
+            { nom: "Jus de cranberry", qte: 1 },
+            { nom: "Schnapps à la pêche", qte: 1 },
+            { nom: "Vodka", qte: 1 },
+            { nom: "Ice", qte: 1 },
+            { nom: "Jus de fruits", qte: 1 }
+        ]
+    },
+    {
+        id: 4, nom: "Rhum-Cola",
+        ingredients: [
+            { nom: "Rhum", qte: 1 },
+            { nom: "Ice", qte: 1 },
+            { nom: "eCola", qte: 1 }
+        ]
+    },
+    {
+        id: 5, nom: "Mojito",
+        ingredients: [
+            { nom: "Rhum", qte: 1 },
+            { nom: "Sucre", qte: 1 },
+            { nom: "Menthe", qte: 1 },
+            { nom: "Citron", qte: 1 },
+            { nom: "Ice", qte: 1 }
+        ]
+    },
+    {
+        id: 6, nom: "Mètre de shooter",
+        ingredients: [
+            { nom: "Jus de fruits", qte: 5 },
+            { nom: "Vodka", qte: 5 },
+            { nom: "Ice", qte: 1 },
+            { nom: "Liqueur", qte: 5 }
+        ]
+    },
+    {
+        id: 7, nom: "Vodka-Energisante",
+        ingredients: [
+            { nom: "Vodka", qte: 1 },
+            { nom: "Boisson énergisante", qte: 1 },
+            { nom: "Ice", qte: 1 }
+        ]
+    },
+    {
+        id: 8, nom: "Rhum-Jus de fruits",
+        ingredients: [
+            { nom: "Rhum", qte: 1 },
+            { nom: "Ice", qte: 1 },
+            { nom: "Jus de fruits", qte: 1 }
+        ]
+    },
+    {
+        id: 9, nom: "Tequila",
+        ingredients: [
+            { nom: "Ice", qte: 1 },
+            { nom: "Citron", qte: 1 },
+            { nom: "Agave", qte: 1 }
+        ]
+    },
+    {
+        id: 10, nom: "Teq'paf",
+        ingredients: [
+            { nom: "Citron", qte: 1 },
+            { nom: "Tequila", qte: 1 },
+            { nom: "Sel", qte: 1 }
+        ]
+    }
+];
+
+// Migration recettes dans la base
+if (!database.recettes) {
+    database.recettes = JSON.parse(JSON.stringify(RECETTES_DEFAULT));
+    saveData();
+}
+
+// ==========================================
+// PAGE RECETTES — AFFICHAGE
+// ==========================================
+function renderRecettesPage() {
+    const el = document.getElementById('recettesGrid');
+    if (!el) return;
+
+    const EMOJIS = {
+        "Vodka-Jus de fruits": "🍹", "Shooter": "🥃", "Sex and the beach": "🌊",
+        "Rhum-Cola": "🥤", "Mojito": "🌿", "Mètre de shooter": "📏",
+        "Vodka-Energisante": "⚡", "Rhum-Jus de fruits": "🍊", "Tequila": "🌵", "Teq'paf": "🍋"
+    };
+    const COLORS = [
+        "rgba(255,105,180,0.15)", "rgba(162,89,230,0.15)", "rgba(127,255,212,0.12)",
+        "rgba(255,215,0,0.1)", "rgba(46,204,113,0.12)", "rgba(231,76,60,0.12)",
+        "rgba(52,152,219,0.15)", "rgba(230,126,34,0.12)", "rgba(155,89,182,0.15)", "rgba(26,188,156,0.12)"
+    ];
+    const BORDER_COLORS = [
+        "rgba(255,105,180,0.4)", "rgba(162,89,230,0.4)", "rgba(127,255,212,0.3)",
+        "rgba(255,215,0,0.3)", "rgba(46,204,113,0.3)", "rgba(231,76,60,0.3)",
+        "rgba(52,152,219,0.35)", "rgba(230,126,34,0.3)", "rgba(155,89,182,0.4)", "rgba(26,188,156,0.3)"
+    ];
+
+    // Trouver le prix du produit catalogue si il existe
+    const getPrix = (nom) => {
+        const p = database.catalogue.find(c => c.nom.toLowerCase() === nom.toLowerCase());
+        return p ? `<span style="color:var(--unicorn-gold);font-weight:700;font-size:0.9rem;">${p.prix.toFixed(2)}$</span>` : '';
+    };
+
+    el.innerHTML = database.recettes.map((recette, i) => {
+        const emoji = EMOJIS[recette.nom] || "🍸";
+        const bg = COLORS[i % COLORS.length];
+        const border = BORDER_COLORS[i % BORDER_COLORS.length];
+        const prixHtml = getPrix(recette.nom);
+        const ingrHtml = recette.ingredients.map(ing =>
+            `<div class="recette-ingr">
+                <span class="recette-ingr-qte">x${ing.qte}</span>
+                <span class="recette-ingr-nom">${ing.nom}</span>
+            </div>`
+        ).join('');
+
+        const editBtn = isPatron
+            ? `<button onclick="openEditRecetteModal(${recette.id})" class="recette-edit-btn">✏️ Modifier</button>`
+            : '';
+
+        return `
+        <div class="recette-card" style="background:${bg};border-color:${border};">
+            <div class="recette-card-header">
+                <span class="recette-emoji">${emoji}</span>
+                <div>
+                    <div class="recette-nom">${recette.nom}</div>
+                    ${prixHtml}
+                </div>
+                ${editBtn}
+            </div>
+            <div class="recette-ingrs-label">Ingrédients :</div>
+            <div class="recette-ingrs">${ingrHtml}</div>
+        </div>`;
+    }).join('');
+}
+
+// ==========================================
+// MODAL ÉDITION RECETTE (Patron)
+// ==========================================
+let editRecetteId = null;
+
+function openEditRecetteModal(id) {
+    if (!isPatron) return alert("Action réservée au Patron.");
+    editRecetteId = id;
+    const recette = database.recettes.find(r => r.id === id);
+    if (!recette) return;
+    document.getElementById('editRecetteNom').innerText = recette.nom;
+    renderEditRecetteIngrs(recette);
+
+    // Prix du produit catalogue lié
+    const prod = database.catalogue.find(c => c.nom.toLowerCase() === recette.nom.toLowerCase());
+    const prixInput = document.getElementById('editRecettePrix');
+    if (prixInput) prixInput.value = prod ? prod.prix : 0;
+
+    document.getElementById('editRecetteModal').style.display = 'block';
+}
+
+function closeEditRecetteModal() {
+    document.getElementById('editRecetteModal').style.display = 'none';
+    editRecetteId = null;
+    renderRecettesPage();
+}
+
+function renderEditRecetteIngrs(recette) {
+    const el = document.getElementById('editRecetteIngrs');
+    if (!el) return;
+    el.innerHTML = recette.ingredients.map((ing, i) => `
+        <div class="edit-ingr-row" id="edit-ingr-${i}">
+            <input type="number" value="${ing.qte}" min="1" style="width:55px;padding:6px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;" onchange="updateIngr(${i}, 'qte', this.value)">
+            <input type="text" value="${ing.nom}" style="flex:1;padding:6px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;" onchange="updateIngr(${i}, 'nom', this.value)">
+            <button onclick="removeIngr(${i})" style="background:var(--rp-red);border:none;color:white;border-radius:4px;cursor:pointer;padding:4px 10px;">✕</button>
+        </div>
+    `).join('');
+}
+
+function updateIngr(index, field, value) {
+    const recette = database.recettes.find(r => r.id === editRecetteId);
+    if (!recette) return;
+    recette.ingredients[index][field] = field === 'qte' ? (parseInt(value) || 1) : value;
+}
+
+function removeIngr(index) {
+    const recette = database.recettes.find(r => r.id === editRecetteId);
+    if (!recette) return;
+    recette.ingredients.splice(index, 1);
+    renderEditRecetteIngrs(recette);
+}
+
+function addIngr() {
+    const nom = document.getElementById('newIngrNom').value.trim();
+    const qte = parseInt(document.getElementById('newIngrQte').value) || 1;
+    if (!nom) return alert("Nom de l'ingrédient requis !");
+    const recette = database.recettes.find(r => r.id === editRecetteId);
+    if (!recette) return;
+    recette.ingredients.push({ nom, qte });
+    renderEditRecetteIngrs(recette);
+    document.getElementById('newIngrNom').value = '';
+    document.getElementById('newIngrQte').value = '1';
+}
+
+function saveEditRecette() {
+    const prixInput = document.getElementById('editRecettePrix');
+    const prix = parseFloat(prixInput?.value) || 0;
+
+    const recette = database.recettes.find(r => r.id === editRecetteId);
+    if (recette) {
+        let prod = database.catalogue.find(c => c.nom.toLowerCase() === recette.nom.toLowerCase());
+        if (prod) {
+            prod.prix = prix;
+        } else {
+            database.catalogue.push({ id: Date.now(), nom: recette.nom, prix });
+        }
+    }
+
+    saveData();
+
+    // Fermer le modal sans appeler renderRecettesPage (on va tout rafraîchir après)
+    document.getElementById('editRecetteModal').style.display = 'none';
+    editRecetteId = null;
+
+    // Tout rafraîchir dans le bon ordre
+    renderRecettesPage();
+    renderCatalogue();
+    renderCatalogueFacturation();
+    populateBillProduitSelect();
+    populateVenteProduitSelect();
+
+    alert("✅ Recette et prix mis à jour !");
+}
+
+// ==========================================
+// MODAL GESTION PRIX CATALOGUE (Patron)
+// ==========================================
+function openPrixCatalogueModal() {
+    if (!isPatron) return alert("Action réservée au Patron.");
+    renderPrixCatalogueModal();
+    document.getElementById('prixCatalogueModal').style.display = 'block';
+}
+
+function closePrixCatalogueModal() {
+    document.getElementById('prixCatalogueModal').style.display = 'none';
+    renderCatalogue();
+    renderCatalogueFacturation();
+    populateBillProduitSelect();
+}
+
+function renderPrixCatalogueModal() {
+    const el = document.getElementById('prixCatalogueList');
+    if (!el) return;
+    if (database.catalogue.length === 0) {
+        el.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Aucun produit dans le catalogue.</p>';
+        return;
+    }
+    el.innerHTML = database.catalogue.map(p => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="flex:1;font-weight:600;">${p.nom}</span>
+            <input type="number" value="${p.prix}" step="0.01" min="0"
+                style="width:100px;padding:6px 8px;background:rgba(255,255,255,0.07);color:var(--unicorn-gold);border:1px solid rgba(255,215,0,0.3);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:700;text-align:right;"
+                onchange="updateCataloguePrix(${p.id}, this.value)">
+            <span style="color:#aaa;font-size:0.85rem;">$</span>
+        </div>
+    `).join('');
+}
+
+function updateCataloguePrix(id, value) {
+    const prod = database.catalogue.find(p => p.id === id);
+    if (prod) prod.prix = parseFloat(value) || 0;
+    saveData();
 }

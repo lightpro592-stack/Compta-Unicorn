@@ -319,6 +319,33 @@ table input:focus, table select:focus {
     font-size: 0.95rem;
 }
 
+/* Partenariats — liste page employé */
+.partenariat-item {
+    background: rgba(127, 255, 212, 0.04);
+    border-color: rgba(127, 255, 212, 0.2);
+    transition: background 0.2s;
+}
+.partenariat-item:hover {
+    background: rgba(127, 255, 212, 0.09);
+}
+.partenariat-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--unicorn-cyan);
+    flex-shrink: 0;
+}
+.partenariat-badge {
+    color: var(--unicorn-cyan) !important;
+    background: rgba(127, 255, 212, 0.12);
+    border: 1px solid rgba(127, 255, 212, 0.3);
+    border-radius: 12px;
+    padding: 1px 8px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
 /* ========================= FACTURATION ========================= */
 .billing-grid {
     display: grid;
@@ -565,3 +592,212 @@ table input:focus, table select:focus {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--unicorn-purple); border-radius: 6px; }
+/* ========================= PAGE RECETTES ========================= */
+.recettes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.recette-card {
+    border: 1px solid rgba(162, 89, 230, 0.3);
+    border-radius: 14px;
+    padding: 18px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+.recette-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(162, 89, 230, 0.2);
+}
+
+.recette-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.recette-emoji {
+    font-size: 2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.recette-nom {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-light);
+    margin-bottom: 3px;
+}
+
+.recette-edit-btn {
+    margin-left: auto;
+    background: rgba(162, 89, 230, 0.2);
+    border: 1px solid rgba(162, 89, 230, 0.5);
+    color: var(--unicorn-purple);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.recette-edit-btn:hover {
+    background: rgba(162, 89, 230, 0.4);
+    color: white;
+}
+
+.recette-ingrs-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.recette-ingrs {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.recette-ingr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid rgba(162, 89, 230, 0.5);
+}
+
+.recette-ingr-qte {
+    background: rgba(162, 89, 230, 0.3);
+    color: var(--unicorn-cyan);
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    padding: 1px 7px;
+    border-radius: 10px;
+    min-width: 28px;
+    text-align: center;
+}
+
+.recette-ingr-nom {
+    color: var(--text-light);
+    font-size: 0.88rem;
+}
+
+/* Edit ingrédients modal */
+.edit-ingr-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+}
+
+/* Billing top row layout */
+.billing-top-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.billing-add-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.billing-main-col {
+    min-width: 0;
+}
+
+.btn-add-panier {
+    background: linear-gradient(135deg, var(--unicorn-purple), var(--unicorn-pink));
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    transition: all 0.2s;
+    height: 36px;
+}
+
+.btn-add-panier:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(162, 89, 230, 0.5);
+}
+
+.panier-empty {
+    text-align: center;
+    color: #555;
+    font-style: italic;
+    padding: 16px;
+    font-size: 0.85rem;
+}
+
+/* Hide edit btn in employee mode */
+.is-employee .recette-edit-btn {
+    display: none !important;
+}
+
+/* ========================= FIX DROPDOWNS ========================= */
+select option {
+    background: #2d0045;
+    color: #ffe6fa;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+    background: linear-gradient(135deg, #a259e6, #ff69b4) !important;
+    color: white !important;
+}
+
+/* Fix général pour tous les selects */
+select {
+    color: #ffe6fa !important;
+}
+
+/* ========================= PRIX FACTURATION ========================= */
+.prix-patron-only {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.prix-employee-display {
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(162,89,230,0.2);
+    color: var(--unicorn-gold);
+    padding: 7px 8px;
+    border-radius: 5px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: not-allowed;
+}
+
+/* En mode employé : cacher l'input, montrer le badge */
+.is-employee .prix-patron-only {
+    display: none !important;
+}
+
+.is-employee .prix-employee-display {
+    display: block !important;
+}

@@ -17,6 +17,7 @@
         <button onclick="showPage('employes')" id="btn-nav-employes" class="active">Employé(e)s</button>
         <button onclick="showPage('dashboard')" id="btn-nav-dashboard">Dashboard</button>
         <button onclick="showPage('facturation')" id="btn-nav-facturation">Facturation</button>
+        <button onclick="showPage('recettes')" id="btn-nav-recettes">🍹 Recettes</button>
         <button id="btn-nav-employe-compte" onclick="openEmployeeLoginModal()" style="border-color:rgba(127,255,212,0.5);color:rgba(127,255,212,0.8);">👤 Espace Employé</button>
         <button id="btn-nav-login" onclick="loginPatron()">🔒 Connexion Patron</button>
     </div>
@@ -156,7 +157,10 @@
                         </div>
                         <div class="form-group" style="flex:1;">
                             <label>Prix ($)</label>
-                            <input type="number" id="billMontant" value="0" step="0.01" oninput="calculateFactureTotal()">
+                            <div style="position:relative;">
+                                <input type="number" id="billMontant" value="0" step="0.01" oninput="calculateFactureTotal()" class="prix-patron-only">
+                                <div id="billPrixDisplay" class="prix-employee-display">—</div>
+                            </div>
                         </div>
                         <div class="form-group" style="flex:0.7;">
                             <label>Qté</label>
@@ -212,6 +216,19 @@
 
         </div>
     </section>
+
+    <!-- ===== PAGE RECETTES ===== -->
+    <section id="page-recettes" class="page" style="display:none;">
+        <div class="header-action">
+            <h1>🍹 Recettes & Prix</h1>
+            <div class="header-buttons">
+                <button class="btn-recruit btn-patron-only" onclick="openPrixCatalogueModal()">💰 Modifier les Prix</button>
+            </div>
+        </div>
+        <p style="color:#aaa;font-size:0.85rem;margin-bottom:18px;">Retrouve ici toutes les recettes de boissons du bar. Le Patron peut modifier les ingrédients et les prix depuis cette page.</p>
+        <div id="recettesGrid" class="recettes-grid"></div>
+    </section>
+
 </div>
 
 <!-- ===== MODAL CONNEXION EMPLOYÉ ===== -->
@@ -343,6 +360,60 @@
             <button onclick="addPartenariat()" class="btn-add-pnj" style="padding:8px 14px;white-space:nowrap;height:36px;">+ Ajouter</button>
         </div>
         <div id="partenariatModalList"></div>
+    </div>
+</div>
+
+
+<!-- ===== MODAL ÉDITION RECETTE ===== -->
+<div id="editRecetteModal" class="modal">
+    <div class="modal-content" style="width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;">
+        <span class="close" onclick="closeEditRecetteModal()">&times;</span>
+        <h2>✏️ Modifier la Recette</h2>
+        <p style="color:var(--unicorn-cyan);font-weight:700;font-size:1.1rem;margin:-10px 0 18px;" id="editRecetteNom"></p>
+
+        <div style="margin-bottom:20px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:14px;">
+            <label style="color:var(--unicorn-gold);font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:8px;">💰 Prix de vente ($)</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <input type="number" id="editRecettePrix" value="0" step="0.01" min="0" style="width:130px;padding:8px;background:rgba(255,255,255,0.07);color:var(--unicorn-gold);border:1px solid rgba(255,215,0,0.4);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;">
+                <span style="color:#888;font-size:0.82rem;">Modifie le prix dans le catalogue en même temps</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="color:#aaa;font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:block;margin-bottom:10px;">🧪 Ingrédients</label>
+            <div id="editRecetteIngrs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+            <div style="display:flex;gap:8px;align-items:center;padding:10px;background:rgba(162,89,230,0.1);border:1px dashed rgba(162,89,230,0.3);border-radius:7px;">
+                <input type="number" id="newIngrQte" value="1" min="1" style="width:55px;padding:6px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;" placeholder="Qté">
+                <input type="text" id="newIngrNom" placeholder="Nom de l'ingrédient..." style="flex:1;padding:6px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(162,89,230,0.4);border-radius:5px;" onkeydown="if(event.key==='Enter') addIngr()">
+                <button onclick="addIngr()" class="btn-add-pnj" style="padding:6px 14px;">+ Ajouter</button>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+            <button onclick="saveEditRecette()" class="btn-validate-facture" style="flex:1;">✅ ENREGISTRER</button>
+            <button onclick="closeEditRecetteModal()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.2);color:white;padding:12px 20px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL PRIX CATALOGUE ===== -->
+<div id="prixCatalogueModal" class="modal">
+    <div class="modal-content" style="width:480px;max-width:95vw;max-height:80vh;overflow-y:auto;">
+        <span class="close" onclick="closePrixCatalogueModal()">&times;</span>
+        <h2>💰 Gestion des Prix</h2>
+        <p style="color:#aaa;font-size:0.85rem;margin:-10px 0 18px;">Modifie les prix de vente de chaque produit du catalogue.</p>
+        <div id="prixCatalogueList"></div>
+        <button onclick="closePrixCatalogueModal()" class="btn-validate-facture" style="width:100%;margin-top:20px;">✅ ENREGISTRER & FERMER</button>
+    </div>
+</div>
+
+
+<!-- ===== MODAL DÉTAIL VENTES EMPLOYÉ ===== -->
+<div id="ventesDetailModal" class="modal">
+    <div class="modal-content" style="width:480px;max-width:95vw;">
+        <span class="close" onclick="closeVentesDetailModal()">&times;</span>
+        <h2>📊 Ventes de <span id="ventesDetailNom" style="color:var(--unicorn-cyan);"></span></h2>
+        <div id="ventesDetailContent"></div>
     </div>
 </div>
 
