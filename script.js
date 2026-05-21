@@ -64,6 +64,7 @@ window.onload = function () {
     renderRecettesPage();
     renderEmployePartenariats();
     renderStocksPage();
+    populateFormulesPage();
     setSecurityMode(false);
     updateNavbarState();
 };
@@ -126,6 +127,7 @@ function setSecurityMode(adminMode) {
     renderFactureItems();
     renderRecettesPage();
     renderStocksPage();
+    populateFormulesPage();
 }
 
 // ==========================================
@@ -316,7 +318,6 @@ function showPage(pageId) {
     if (pageId === 'stocks') renderStocksPage();
     if (pageId === 'facturation') {
         if (!isPatron && !currentEmployee) {
-            // Revenir sur la page employes et alerter
             document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
             document.getElementById('page-employes').style.display = 'block';
             document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
@@ -325,6 +326,17 @@ function showPage(pageId) {
             return;
         }
         autoSelectEmployeeInFacture();
+    }
+    if (pageId === 'formules') {
+        if (!isPatron && !currentEmployee) {
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('page-employes').style.display = 'block';
+            document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-nav-employes').classList.add('active');
+            alert("🔒 Connecte-toi à ton compte employé pour accéder aux formules.");
+            return;
+        }
+        populateFormulesPage();
     }
 }
 
@@ -1697,4 +1709,361 @@ function submitEditCompo() {
     renderCompoModalList();
     refreshAfterCompoChange();
     alert(`✅ Composition "${nom}" mise à jour !`);
+}
+
+// ==========================================
+// FORMULES
+// ==========================================
+const FORMULES = [
+    {
+        id: 'decouverte',
+        nom: 'DÉCOUVERTE',
+        prix: 9000,
+        couleur: 'var(--unicorn-pink)',
+        bordure: 'rgba(255,105,180,0.5)',
+        bg: 'rgba(255,105,180,0.08)',
+        emoji: '🌸',
+        avantages: [
+            { label: 'Cocktails au choix', type: 'cocktail', qte: 2 }
+        ],
+        licorne: false
+    },
+    {
+        id: 'vip',
+        nom: 'VIP',
+        prix: 18000,
+        couleur: 'var(--unicorn-purple)',
+        bordure: 'rgba(162,89,230,0.5)',
+        bg: 'rgba(162,89,230,0.08)',
+        emoji: '💜',
+        avantages: [
+            { label: 'Cocktails au choix', type: 'cocktail', qte: 2 },
+            { label: 'Mètre de shooter', type: 'metre', qte: 1 },
+            { label: 'Snack', type: 'snack', qte: 1 }
+        ],
+        licorne: false
+    },
+    {
+        id: 'premium',
+        nom: 'PREMIUM',
+        prix: 22500,
+        couleur: 'var(--unicorn-cyan)',
+        bordure: 'rgba(127,255,212,0.5)',
+        bg: 'rgba(127,255,212,0.06)',
+        emoji: '💎',
+        avantages: [
+            { label: 'Cocktails au choix', type: 'cocktail', qte: 3 },
+            { label: 'Mètre de shooter', type: 'metre', qte: 1 },
+            { label: 'Snacks', type: 'snack', qte: 2 }
+        ],
+        licorne: false
+    },
+    {
+        id: 'licorne',
+        nom: 'LICORNE',
+        prix: 37500,
+        couleur: 'var(--unicorn-gold)',
+        bordure: 'rgba(255,215,0,0.5)',
+        bg: 'rgba(255,215,0,0.07)',
+        emoji: '🦄',
+        avantages: [
+            { label: 'Cocktails au choix', type: 'cocktail', qte: 4 },
+            { label: 'Mètres de shooter', type: 'metre', qte: 2 },
+            { label: 'Snacks', type: 'snack', qte: 2 }
+        ],
+        licorne: true
+    }
+];
+
+let selectedFormule = null;
+let formulesSelections = {};
+
+function populateFormulesPage() {
+    populateFormulesEmployeSelect();
+    populateFormulesPartenariatSelect();
+    renderFormuleSidePartenariats();
+    renderFormulesCards();
+}
+
+function populateFormulesEmployeSelect() {
+    const s = document.getElementById('formulesEmployeSelect');
+    if (!s) return;
+    const employes = database.employes.filter(e => e.nom !== 'Aucun');
+    s.innerHTML = '<option value="">Sélectionner...</option>' +
+        employes.map(e => `<option value="${e.nom}">${e.nom} — ${e.grade}</option>`).join('');
+}
+
+function populateFormulesPartenariatSelect() {
+    const s = document.getElementById('formulesPartenariatSelect');
+    if (!s) return;
+    s.innerHTML = '<option value="">— Aucun partenariat —</option>' +
+        database.partenariats.map(p =>
+            `<option value="${p.id}">${p.nom} (-${(p.reduction*100).toFixed(0)}%)</option>`
+        ).join('');
+    updateFormulesTotalDisplay();
+}
+
+function renderFormuleSidePartenariats() {
+    const el = document.getElementById('formulesPartenariatList');
+    if (!el) return;
+    if (database.partenariats.length === 0) {
+        el.innerHTML = '<p style="color:#888;font-size:0.85rem;">Aucun partenariat.</p>';
+        return;
+    }
+    el.innerHTML = database.partenariats.map(p =>
+        `<div class="catalogue-item"><span class="catalogue-nom">${p.nom}</span><span class="catalogue-prix" style="color:var(--unicorn-cyan);">-${(p.reduction*100).toFixed(0)}%</span></div>`
+    ).join('');
+}
+
+function renderFormulesCards() {
+    const el = document.getElementById('formulesCardsGrid');
+    if (!el) return;
+    el.innerHTML = FORMULES.map(f => `
+        <div onclick="selectFormule('${f.id}')" id="formule-card-${f.id}"
+            style="cursor:pointer;padding:16px;border-radius:10px;border:2px solid ${f.bordure};background:${f.bg};transition:all 0.2s;text-align:center;"
+            onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size:1.8rem;margin-bottom:6px;">${f.emoji}</div>
+            <div style="color:${f.couleur};font-weight:700;font-family:'Rajdhani',sans-serif;font-size:1rem;letter-spacing:1px;">${f.nom}</div>
+            <div style="color:var(--unicorn-gold);font-size:1.15rem;font-weight:700;margin-top:6px;">${f.prix.toLocaleString()}$</div>
+            <div style="color:#aaa;font-size:0.72rem;margin-top:6px;line-height:1.5;">${f.avantages.map(a => `${a.qte}x ${a.label}`).join('<br>')}</div>
+        </div>
+    `).join('');
+}
+
+function selectFormule(id) {
+    selectedFormule = FORMULES.find(f => f.id === id);
+    if (!selectedFormule) return;
+
+    FORMULES.forEach(f => {
+        const card = document.getElementById('formule-card-' + f.id);
+        if (card) {
+            card.style.boxShadow = f.id === id ? '0 0 20px ' + f.bordure : 'none';
+            card.style.borderWidth = f.id === id ? '2px' : '2px';
+        }
+    });
+
+    formulesSelections = {};
+    buildFormulesItemsSelectors();
+
+    document.getElementById('formulesDetailTitre').innerText = selectedFormule.emoji + ' Formule ' + selectedFormule.nom;
+    document.getElementById('formulesDetailPrix').innerText = selectedFormule.prix.toLocaleString() + '$';
+    document.getElementById('formulesDetailBox').style.display = 'block';
+    document.getElementById('formulesLicorneNote').style.display = selectedFormule.licorne ? 'block' : 'none';
+
+    updateFormulesTotalDisplay();
+}
+
+function buildFormulesItemsSelectors() {
+    const el = document.getElementById('formulesItemsSelectors');
+    if (!el || !selectedFormule) return;
+
+    const recettes = database.recettes || [];
+    const catalogue = database.catalogue || [];
+
+    // Cocktails = recettes qui ne sont pas mètres/snacks
+    const cocktailsList = recettes.filter(r => {
+        const n = r.nom.toLowerCase();
+        return !n.includes('mètre') && !n.includes('metre') && !n.includes('shooter') && !n.includes('snack') && !n.includes('planche');
+    });
+
+    // Mètres = items dont le nom contient metre/shooter, dans recettes ou catalogue
+    const metreSet = new Map();
+    recettes.filter(r => { const n=r.nom.toLowerCase(); return n.includes('mètre')||n.includes('metre')||n.includes('shooter'); })
+        .forEach(r => { const p=catalogue.find(c=>c.nom.toLowerCase()===r.nom.toLowerCase()); metreSet.set(r.nom,{nom:r.nom,prix:p?p.prix:0}); });
+    catalogue.filter(c => { const n=c.nom.toLowerCase(); return n.includes('mètre')||n.includes('metre')||n.includes('shooter'); })
+        .forEach(c => { if(!metreSet.has(c.nom)) metreSet.set(c.nom,{nom:c.nom,prix:c.prix||0}); });
+    const metresList = Array.from(metreSet.values());
+
+    // Snacks = items dont le nom contient snack/planche/apéro
+    const snackSet = new Map();
+    catalogue.filter(c => { const n=c.nom.toLowerCase(); return n.includes('snack')||n.includes('planche')||n.includes('apéro')||n.includes('aperо'); })
+        .forEach(c => { snackSet.set(c.nom,{nom:c.nom,prix:c.prix||0}); });
+    const snacksList = Array.from(snackSet.values());
+
+    el.innerHTML = selectedFormule.avantages.map(avantage => {
+        let slots = '';
+        for (let i = 0; i < avantage.qte; i++) {
+            const slotKey = avantage.type + '_' + i;
+            let options = '<option value="">— Choisir —</option>';
+
+            if (avantage.type === 'cocktail') {
+                if (cocktailsList.length > 0) {
+                    options += cocktailsList.map(r => {
+                        const prod = catalogue.find(c => c.nom.toLowerCase() === r.nom.toLowerCase());
+                        const prix = prod ? prod.prix : 0;
+                        return `<option value="cocktail|${r.id}|${r.nom}|${prix}">${r.nom} (${prix.toLocaleString()}$)</option>`;
+                    }).join('');
+                } else {
+                    options = '<option value="cocktail|libre|Cocktail|0">Cocktail (inclus dans formule)</option>';
+                }
+            } else if (avantage.type === 'metre') {
+                if (metresList.length > 0) {
+                    options += metresList.map(m => `<option value="metre|m_${m.nom}|${m.nom}|${m.prix}">${m.nom} (${m.prix.toLocaleString()}$)</option>`).join('');
+                } else {
+                    options = '<option value="metre|inclus|Mètre de shooter|0">Mètre de shooter (inclus)</option>';
+                }
+            } else if (avantage.type === 'snack') {
+                if (snacksList.length > 0) {
+                    options += snacksList.map(s => `<option value="snack|s_${s.nom}|${s.nom}|${s.prix}">${s.nom} (${s.prix.toLocaleString()}$)</option>`).join('');
+                } else {
+                    options = '<option value="snack|inclus|Snack|0">Snack (inclus)</option>';
+                }
+            }
+
+            const autoSelect = !options.includes('— Choisir —');
+            slots += `
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span style="color:#aaa;font-size:0.8rem;min-width:28px;text-align:right;">#${i+1}</span>
+                    <select data-slot="${slotKey}" onchange="onFormulesItemChange('${slotKey}', this)"
+                        style="flex:1;padding:7px;background:rgba(255,255,255,0.07);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:5px;font-family:'Rajdhani',sans-serif;font-size:0.92rem;">
+                        ${options}
+                    </select>
+                </div>`;
+        }
+
+        return `
+            <div style="margin-bottom:16px;background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;">
+                <div style="color:${selectedFormule.couleur};font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px;">
+                    ${avantage.qte}x ${avantage.label}
+                </div>
+                ${slots}
+            </div>`;
+    }).join('');
+
+    // Auto-sélectionner les slots avec option unique
+    document.querySelectorAll('#formulesItemsSelectors select').forEach(sel => {
+        if (sel.options.length === 1) {
+            onFormulesItemChange(sel.dataset.slot, sel);
+        }
+    });
+
+    updateFormulesTotalDisplay();
+}
+
+function onFormulesItemChange(slotKey, selectEl) {
+    const val = selectEl.value;
+    if (!val) {
+        delete formulesSelections[slotKey];
+    } else {
+        const parts = val.split('|');
+        formulesSelections[slotKey] = { type: parts[0], id: parts[1], nom: parts[2], prix: parseFloat(parts[3]) || 0 };
+    }
+    renderFormulesRecap();
+    updateFormulesTotalDisplay();
+}
+
+function updateFormulesTotalDisplay() {
+    if (!selectedFormule) {
+        const t = document.getElementById('formulesTotalAffiche');
+        if (t) t.innerText = '0.00';
+        return;
+    }
+
+    const partSelect = document.getElementById('formulesPartenariatSelect');
+    const partId = partSelect ? parseInt(partSelect.value) : null;
+    const partenariat = database.partenariats.find(p => p.id === partId);
+    const reduction = partenariat ? partenariat.reduction : 0;
+    const totalFinal = selectedFormule.prix * (1 - reduction);
+
+    const totalEl = document.getElementById('formulesTotalAffiche');
+    if (totalEl) totalEl.innerText = totalFinal.toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    const reductLabel = document.getElementById('formulesReductionLabel');
+    if (reductLabel) {
+        reductLabel.style.display = reduction > 0 ? 'block' : 'none';
+        reductLabel.innerText = reduction > 0
+            ? '🏷️ Réduction ' + partenariat.nom + ' : -' + (reduction*100).toFixed(0) + '% (prix formule : ' + selectedFormule.prix.toLocaleString() + '$)'
+            : '';
+    }
+}
+
+function renderFormulesRecap() {
+    const el = document.getElementById('formulesRecapTable');
+    if (!el || !selectedFormule) return;
+
+    let rows = `<tr style="background:rgba(255,255,255,0.03);">
+        <td style="padding:8px 10px;font-weight:700;color:${selectedFormule.couleur};">${selectedFormule.emoji} Formule ${selectedFormule.nom}</td>
+        <td style="padding:8px 10px;text-align:center;color:#aaa;">1</td>
+        <td style="padding:8px 10px;text-align:right;color:var(--unicorn-gold);font-weight:700;">${selectedFormule.prix.toLocaleString()}$</td>
+    </tr>`;
+
+    const grouped = {};
+    Object.values(formulesSelections).forEach(sel => {
+        grouped[sel.nom] = (grouped[sel.nom] || 0) + 1;
+    });
+    Object.entries(grouped).forEach(([nom, qte]) => {
+        rows += `<tr>
+            <td style="padding:6px 10px 6px 24px;color:#ccc;font-size:0.88rem;">↳ ${nom}</td>
+            <td style="padding:6px 10px;text-align:center;color:#aaa;font-size:0.88rem;">${qte}</td>
+            <td style="padding:6px 10px;text-align:right;color:#aaa;font-size:0.88rem;">inclus</td>
+        </tr>`;
+    });
+
+    el.innerHTML = rows;
+}
+
+function resetFormuleSelection() {
+    selectedFormule = null;
+    formulesSelections = {};
+    document.getElementById('formulesDetailBox').style.display = 'none';
+    const t = document.getElementById('formulesTotalAffiche');
+    if (t) t.innerText = '0.00';
+    FORMULES.forEach(f => {
+        const card = document.getElementById('formule-card-' + f.id);
+        if (card) card.style.boxShadow = 'none';
+    });
+    const empSel = document.getElementById('formulesEmployeSelect');
+    const partSel = document.getElementById('formulesPartenariatSelect');
+    if (empSel) empSel.value = '';
+    if (partSel) partSel.value = '';
+}
+
+function processFormule() {
+    if (!isPatron && !currentEmployee) return alert("🔒 Tu dois te connecter à ton compte employé pour valider.");
+    const chauffeurNom = document.getElementById('formulesEmployeSelect').value;
+    if (!chauffeurNom) return alert("Sélectionne un chauffeur !");
+    if (!selectedFormule) return alert("Sélectionne une formule !");
+
+    // Vérifier que les slots avec choix multiples sont remplis
+    const emptySelects = document.querySelectorAll('#formulesItemsSelectors select');
+    let hasEmpty = false;
+    emptySelects.forEach(s => { if (s.value === '' && s.options.length > 1) hasEmpty = true; });
+    if (hasEmpty) return alert("⚠️ Sélectionne tous les articles de la formule avant de valider !");
+
+    const partSelect = document.getElementById('formulesPartenariatSelect');
+    const partId = partSelect ? parseInt(partSelect.value) : null;
+    const partenariat = database.partenariats.find(p => p.id === partId);
+    const reduction = partenariat ? partenariat.reduction : 0;
+    const totalFinal = selectedFormule.prix * (1 - reduction);
+
+    const selDetail = Object.values(formulesSelections).map(s => '  • ' + s.nom).join('\n') || '  • Articles inclus';
+    const reductStr = reduction > 0 ? '\n🏷️ Réduction ' + partenariat.nom + ': -' + (reduction*100).toFixed(0) + '%' : '';
+    const licorneStr = selectedFormule.licorne ? '\n⭐ -30% sur la prochaine boisson (à appliquer manuellement).' : '';
+
+    if (!confirm('Formule ' + selectedFormule.nom + ' pour ' + chauffeurNom + ' :\n\n' + selDetail + reductStr + licorneStr + '\n\n💰 TOTAL : ' + totalFinal.toLocaleString() + '$\n\nConfirmer ?')) return;
+
+    const emp = database.employes.find(e => e.nom === chauffeurNom);
+    if (!emp) return;
+
+    // Enregistrer la vente
+    emp.ventes.push({
+        produitNom: 'Formule ' + selectedFormule.nom,
+        prix: selectedFormule.prix,
+        qte: 1,
+        total: totalFinal,
+        date: new Date().toLocaleDateString('fr-FR')
+    });
+
+    // Déduire stocks pour chaque cocktail sélectionné
+    Object.values(formulesSelections).forEach(sel => {
+        if (sel.type === 'cocktail') deductStocksForSale(sel.nom, 1);
+    });
+
+    emp.apportClient += totalFinal;
+    sendToGoogleSheet(chauffeurNom, 'Formule ' + selectedFormule.nom, 1, totalFinal.toFixed(2));
+    saveData();
+    renderEmployeeTable();
+    updateDashboard();
+    resetFormuleSelection();
+    alert('✅ Formule ' + selectedFormule.nom + ' enregistrée ! Total : ' + totalFinal.toLocaleString() + '$');
 }

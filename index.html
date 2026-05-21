@@ -17,6 +17,7 @@
         <button onclick="showPage('employes')" id="btn-nav-employes" class="active">Employé(e)s</button>
         <button onclick="showPage('dashboard')" id="btn-nav-dashboard">Dashboard</button>
         <button onclick="showPage('facturation')" id="btn-nav-facturation">Facturation</button>
+        <button onclick="showPage('formules')" id="btn-nav-formules">🌟 Formules</button>
         <button onclick="showPage('recettes')" id="btn-nav-recettes">🍹 Recettes</button>
         <button onclick="showPage('stocks')" id="btn-nav-stocks">📦 Stocks</button>
         <button id="btn-nav-employe-compte" onclick="openEmployeeLoginModal()" style="border-color:rgba(127,255,212,0.5);color:rgba(127,255,212,0.8);">👤 Espace Employé</button>
@@ -215,6 +216,123 @@
                 </div>
             </div>
 
+        </div>
+    </section>
+
+    <!-- ===== PAGE FORMULES ===== -->
+    <section id="page-formules" class="page" style="display:none;">
+        <h1>🌟 Facturation Formules</h1>
+
+        <div class="billing-grid">
+            <div class="billing-main-col">
+
+                <!-- Chauffeur + Partenariat -->
+                <div class="form-box" style="margin-bottom:12px;">
+                    <div class="billing-top-row">
+                        <div class="form-group">
+                            <label>👤 Chauffeur</label>
+                            <select id="formulesEmployeSelect">
+                                <option value="">Sélectionner...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🤝 Partenariat</label>
+                            <select id="formulesPartenariatSelect" onchange="updateFormulesTotalDisplay()">
+                                <option value="">— Aucun partenariat —</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sélecteur de formule -->
+                <div class="form-box" style="margin-bottom:12px;">
+                    <h3 style="margin-bottom:14px;color:var(--unicorn-pink);">🌟 Choisir une Formule</h3>
+                    <div id="formulesCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+                        <!-- Rempli dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Contenu dynamique de la formule sélectionnée -->
+                <div id="formulesDetailBox" style="display:none;">
+                    <div class="form-box" style="margin-bottom:12px;border:1px solid var(--unicorn-pink);background:rgba(255,105,180,0.05);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                            <h3 id="formulesDetailTitre" style="margin:0;color:var(--unicorn-pink);font-size:1.1rem;"></h3>
+                            <span id="formulesDetailPrix" style="color:var(--unicorn-gold);font-size:1.3rem;font-weight:700;font-family:'Rajdhani',sans-serif;"></span>
+                        </div>
+
+                        <!-- Items à sélectionner selon les avantages de la formule -->
+                        <div id="formulesItemsSelectors"></div>
+
+                        <!-- Note spéciale Licorne -->
+                        <div id="formulesLicorneNote" style="display:none;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:0.85rem;color:var(--unicorn-gold);">
+                            ⭐ Avantage Licorne : <strong>-30% sur la prochaine boisson achetée</strong> — à appliquer via un partenariat sur la prochaine facture.
+                        </div>
+                    </div>
+
+                    <!-- Récap panier formule -->
+                    <div class="form-box">
+                        <h3 style="margin-bottom:12px;">🛒 Récapitulatif de la formule</h3>
+                        <div class="table-container" style="margin-bottom:12px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Article</th>
+                                        <th style="text-align:center;">Qté</th>
+                                        <th style="text-align:right;">Sous-total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="formulesRecapTable">
+                                    <tr><td colspan="3" class="panier-empty">Sélectionne une formule.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="formulesReductionLabel" style="display:none;background:rgba(127,255,212,0.1);border:1px solid var(--unicorn-cyan);border-radius:6px;padding:8px 12px;font-size:0.85rem;color:var(--unicorn-cyan);margin-bottom:12px;"></div>
+
+                        <div class="billing-action-row">
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn-validate-facture" onclick="processFormule()">✅ VALIDER LA FORMULE</button>
+                                <button onclick="resetFormuleSelection()" style="background:rgba(231,76,60,0.2);border:1px solid var(--rp-red);color:var(--rp-red);padding:12px 18px;border-radius:8px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.9rem;">🗑️ Reset</button>
+                            </div>
+                            <div class="facture-total-card">Total : <span id="formulesTotalAffiche">0.00</span>$</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Panneau latéral -->
+            <div class="side-panel">
+                <div class="table-container mini-table">
+                    <h3>🌟 Les Formules</h3>
+                    <div style="padding:10px;">
+                        <div style="margin-bottom:10px;padding:10px;background:rgba(255,105,180,0.08);border:1px solid rgba(255,105,180,0.25);border-radius:8px;">
+                            <div style="color:var(--unicorn-pink);font-weight:700;font-size:0.9rem;">DÉCOUVERTE</div>
+                            <div style="color:#aaa;font-size:0.78rem;margin-top:2px;">2 Cocktails au choix</div>
+                            <div style="color:var(--unicorn-gold);font-weight:700;margin-top:4px;">9 000$</div>
+                        </div>
+                        <div style="margin-bottom:10px;padding:10px;background:rgba(162,89,230,0.08);border:1px solid rgba(162,89,230,0.25);border-radius:8px;">
+                            <div style="color:var(--unicorn-purple);font-weight:700;font-size:0.9rem;">VIP</div>
+                            <div style="color:#aaa;font-size:0.78rem;margin-top:2px;">2 Cocktails + 1 Mètre de shooter + 1 Snack</div>
+                            <div style="color:var(--unicorn-gold);font-weight:700;margin-top:4px;">18 000$</div>
+                        </div>
+                        <div style="margin-bottom:10px;padding:10px;background:rgba(127,255,212,0.06);border:1px solid rgba(127,255,212,0.2);border-radius:8px;">
+                            <div style="color:var(--unicorn-cyan);font-weight:700;font-size:0.9rem;">PREMIUM</div>
+                            <div style="color:#aaa;font-size:0.78rem;margin-top:2px;">3 Cocktails + 1 Mètre de shooter + 2 Snacks</div>
+                            <div style="color:var(--unicorn-gold);font-weight:700;margin-top:4px;">22 500$</div>
+                        </div>
+                        <div style="padding:10px;background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.3);border-radius:8px;">
+                            <div style="color:var(--unicorn-gold);font-weight:700;font-size:0.9rem;">🦄 LICORNE</div>
+                            <div style="color:#aaa;font-size:0.78rem;margin-top:2px;">4 Cocktails + 2 Mètres + 2 Snacks + -30% prochaine boisson</div>
+                            <div style="color:var(--unicorn-gold);font-weight:700;margin-top:4px;">37 500$</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container mini-table" style="margin-top:10px;">
+                    <h3>🤝 Partenariats</h3>
+                    <div id="formulesPartenariatList" class="catalogue-list" style="padding:10px;"></div>
+                </div>
+            </div>
         </div>
     </section>
 
